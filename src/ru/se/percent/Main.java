@@ -15,36 +15,16 @@ public class Main {
 	}
 	
 	public static Loan getTestLoan() {
-		Loan loan = new Loan("Росбанк", "1", new ArrayList<>(), LocalDate.of(2018, 1, 1), LocalDate.of(2019, 12, 31), 29, new TreeMap<>());
+		Loan loan = new Loan("Росбанк", "1", new ArrayList<>(), LocalDate.of(2018, 1, 1), LocalDate.of(2019, 12, 31), 26, new TreeMap<>());
 		loan.addOperation(new Operation(LocalDate.of(2018,  1,  1), 100_000_000, Type.MAIN_RECEIVED));
 		loan.addOperation(new Operation(LocalDate.of(2018,  6,  30), 20_000_000, Type.MAIN_PAID));
 		loan.addOperation(new Operation(LocalDate.of(2018,  12, 31), 20_000_000, Type.MAIN_PAID));
 		loan.addOperation(new Operation(LocalDate.of(2019,  12, 31), 60_000_000, Type.MAIN_PAID));
 		loan.addRate(loan.getStartDate(), 10.0);
+		loan.addRate(loan.getStartDate(), 15.0);
 		
-		List<LocalDate> dates = new ArrayList<>();
-		LocalDate currentDate = loan.getStartDate();
-		while (!currentDate.equals(loan.getEndDate())) {
-			int checkDay = loan.getCheckDay();
-			if (loan.getCheckDay() > 28 && currentDate.getMonth() == Month.FEBRUARY) {
-				checkDay = currentDate.isLeapYear() ? 29 : 28;
-			}
-			else if (loan.getCheckDay() > 30) {
-				checkDay = 31;
-			}
-			LocalDate checkDate = LocalDate.of(currentDate.getYear(), currentDate.getMonth(), checkDay);
-			LocalDate checkDatePlusOne = checkDate.plusDays(1);
-			if (
-					currentDate.equals(loan.getStartDate()) || 
-					currentDate.equals(LocalDate.of(currentDate.getYear(), currentDate.getMonth(), checkDay))|| 
-					currentDate.equals(checkDatePlusOne) || 
-					currentDate.equals(LocalDate.of(currentDate.getYear(), currentDate.getMonth(), 1)) || 
-					currentDate.equals(LocalDate.of(currentDate.getYear(), currentDate.getMonth(), currentDate.lengthOfMonth()))
-					) {
-				dates.add(currentDate);
-			}
-			currentDate = currentDate.plusDays(1);
-		}
+		/*
+		List<LocalDate> dates = loan.getDates();
 		
 		LocalDate startDate = null;
 		LocalDate endDate = null;
@@ -58,8 +38,8 @@ public class Main {
 		for (int i = 0; i < dates.size(); i++) {
 			System.out.println(dates.get(i));
 		}
+		*/
 		
-		//System.out.println(dates.size());
 		return loan;
 	}
 }
