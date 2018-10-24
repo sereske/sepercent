@@ -20,11 +20,11 @@ import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
-import java.io.StringBufferInputStream;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 import java.awt.event.ActionEvent;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
@@ -33,6 +33,11 @@ import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.border.EtchedBorder;
+import javax.swing.JCheckBox;
+import javax.swing.JMenuBar;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 
 public class MainFrame extends JFrame {
 
@@ -53,8 +58,11 @@ public class MainFrame extends JFrame {
 	private JTextField tfRateValue;
 	private JTextField tfOperationsDate;
 	private JTextField tfOperationsSum;
-	private JComboBox<Type> cbOperation;
+	private JComboBox<ru.se.percent.Type> cmbOperation;
+	private JCheckBox chbDateDivision;
 
+	private Loan loan = Loan.getTestLoan();
+	
 	/**
 	 * Launch the application.
 	 */
@@ -75,14 +83,47 @@ public class MainFrame extends JFrame {
 	 * Create the frame.
 	 */
 	public MainFrame() {
+		setTitle("Кредит СЭ");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 1042, 581);
+		setBounds(100, 100, 1530, 850);
+		
+		JMenuBar menuBar = new JMenuBar();
+		setJMenuBar(menuBar);
+		
+		JMenu mnMain = new JMenu("Главная");
+		menuBar.add(mnMain);
+		
+		JMenuItem mntmSave = new JMenuItem("Сохранить");
+		mntmSave.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				
+			}
+		});
+		mnMain.add(mntmSave);
+		
+		JMenuItem mntmLoad = new JMenuItem("Загрузить");
+		mnMain.add(mntmLoad);
+		
+		JMenu mnHelp = new JMenu("Справка");
+		menuBar.add(mnHelp);
+		
+		JMenuItem mntmAbout = new JMenuItem("О программе");
+		mntmAbout.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				JOptionPane.showMessageDialog(MainFrame.this, 
+						"Кредит СЭ 1.0", 
+						"О программе", 
+						JOptionPane.PLAIN_MESSAGE);
+			}
+		});
+		mnHelp.add(mntmAbout);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
 		contentPane.setLayout(new BorderLayout(0, 0));
 		
 		JPanel panelNorth = new JPanel();
+		panelNorth.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
 		contentPane.add(panelNorth, BorderLayout.NORTH);
 		panelNorth.setLayout(new GridLayout(0, 4, 5, 5));
 		
@@ -187,9 +228,16 @@ public class MainFrame extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				DefaultTableModel model = (DefaultTableModel) tableRate.getModel();
 				int[] selectedRows = tableRate.getSelectedRows();
-				for (Integer row : selectedRows) {
-					model.removeRow(row);
+				System.out.println(model.getColumnCount());
+				for (Integer rowIndex : selectedRows) {
+					//Vector data = model.getDataVector();
+					//data.elementAt(index)
+					String strDate = model.getValueAt(rowIndex, 0).toString();
+					LocalDate date = LocalDate.parse(strDate);
+					model.removeRow(rowIndex);
+					loan.removeRate(date);
 				}
+				//logRates();
 			}
 		});
 		panelRateCmd.add(btnDeleteRate);
@@ -203,7 +251,9 @@ public class MainFrame extends JFrame {
 				if (rateDate != null && !rateDate.isEmpty() && rateValue != null && !rateValue.isEmpty()) {
 					DefaultTableModel model = (DefaultTableModel) tableRate.getModel();
 					model.addRow(new Object[] {rateDate, rateValue});
+					loan.addRate(LocalDate.parse(rateDate), Double.parseDouble(rateValue));
 				}
+				//logRates();
 			}
 		});
 		
@@ -246,9 +296,9 @@ public class MainFrame extends JFrame {
 		JLabel lblOperation = new JLabel("Операция");
 		panelOperationsFormOperation.add(lblOperation);
 		
-		cbOperation = new JComboBox<>();
-		cbOperation.setModel(new DefaultComboBoxModel(ru.se.percent.Type.values()));
-		panelOperationsFormOperation.add(cbOperation);
+		cmbOperation = new JComboBox<ru.se.percent.Type>();
+		cmbOperation.setModel(new DefaultComboBoxModel<>(ru.se.percent.Type.values()));
+		panelOperationsFormOperation.add(cmbOperation);
 		
 		JPanel panelOperationsFormSum = new JPanel();
 		panelOperationsForm.add(panelOperationsFormSum);
@@ -267,10 +317,13 @@ public class MainFrame extends JFrame {
 		btnAddOperation.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String date = tfOperationsDate.getText();
-				Object op = cbOperation.getSelectedItem();
+				ru.se.percent.Type type = (ru.se.percent.Type) cmbOperation.getSelectedItem();
 				String sum = tfOperationsSum.getText();
 				DefaultTableModel model = (DefaultTableModel) tableOperations.getModel();
-				model.addRow(new Object[] {date, op, sum});
+				model.addRow(new Object[] {date, type, sum});
+				Operation op = new Operation(LocalDate.parse(date), Double.parseDouble(sum), type);
+				loan.addOperation(op);
+				logOperations();
 			}
 		});
 		btnAddOperation.setIcon(new ImageIcon(MainFrame.class.getResource("/images/icons8-plus-sign.png")));
@@ -282,9 +335,14 @@ public class MainFrame extends JFrame {
 				DefaultTableModel model = (DefaultTableModel) tableOperations.getModel();
 				int[] selectedRows = tableOperations.getSelectedRows();
 				for (Integer rowIndex : selectedRows) {
-					
+					String strDate = model.getValueAt(rowIndex, 0).toString();
+					double sum = Double.parseDouble(model.getValueAt(rowIndex, 2).toString());
+					ru.se.percent.Type type = (ru.se.percent.Type) model.getValueAt(rowIndex, 1);
+					Operation op = new Operation(LocalDate.parse(strDate), sum, type);
+					loan.removeOperation(op);
 					model.removeRow(rowIndex);
 				}
+				logOperations();
 			}
 		});
 		btnDeleteOperation.setIcon(new ImageIcon(MainFrame.class.getResource("/images/icons8-delete-button.png")));
@@ -305,10 +363,20 @@ public class MainFrame extends JFrame {
 		panelReportCmd.add(lblReportTitle);
 		lblReportTitle.setHorizontalAlignment(SwingConstants.CENTER);
 		
+		chbDateDivision = new JCheckBox("Разделение месяца по дню расчета");
+		chbDateDivision.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				refreshReportTable();
+			}
+		});
+		chbDateDivision.setSelected(true);
+		panelReportCmd.add(chbDateDivision);
+		
 		JButton btnRefresh = new JButton("Обновить");
 		panelReportCmd.add(btnRefresh);
 		btnRefresh.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				refreshReportTable();
 			}
 		});
 		
@@ -324,8 +392,16 @@ public class MainFrame extends JFrame {
 		prepareTables();
 	}
 	
+	private void logRates() {
+		loan.getRates().forEach((k, v) -> System.out.println(k + " " + v));
+	}
+	
+	private void logOperations() {
+		loan.getOperations().stream().forEach(e -> System.out.println(e.getDate() + " " + e.getType() + " " + e.getSum()));
+	}
+	
 	private void prepareProperties() {
-		Loan loan = Loan.getTestLoan();
+		//Loan loan = Loan.getTestLoan();
 		
 		tfBank.setText(loan.getBank());
 		tfCheckDay.setText(String.valueOf(loan.getCheckDay()));
@@ -336,8 +412,12 @@ public class MainFrame extends JFrame {
 	}
 	
 	private void prepareTables() {
-		Loan loan = Loan.getTestLoan();
-		
+		refreshRateTable();
+		refreshOperationsTable();
+		refreshReportTable();
+	}
+	
+	private void refreshRateTable() {
 		List<String> rateCols = new ArrayList<>();
 		rateCols.add("Дата");
 		rateCols.add("Процентная ставка");
@@ -347,30 +427,29 @@ public class MainFrame extends JFrame {
 			rateData[i][0] = pair.getKey();
 			rateData[i][1] = pair.getValue();
 			i++;
-			//System.out.println(rateData[i][0] + " " + rateData[i][1]);
 		}
 		TableModel rateModel = new DefaultTableModel(rateData, rateCols.toArray());
 		tableRate.setModel(rateModel);
-		
-		//((DefaultTableModel) tableRate.getModel()).fireTableDataChanged();
-		
+	}
+	
+	private void refreshOperationsTable() {
 		List<String> operationsCols = new ArrayList<>();
 		operationsCols.add("Дата");
 		operationsCols.add("Тип");
 		operationsCols.add("Сумма");
 		Object[][] operationsData = new Object[loan.getOperations().size()][3];
-		i = 0;
+		int i = 0;
 		for (Operation op : loan.getOperations()) {
 			operationsData[i][0] = op.getDate();
 			operationsData[i][1] = op.getType();
 			operationsData[i][2] = op.getSum();
 			i++;
-			//System.out.println(operationsData[i][0] + " " + operationsData[i][1] + " " + operationsData[i][2]);
 		}
 		TableModel operationsModel = new DefaultTableModel(operationsData, operationsCols.toArray());
 		tableOperations.setModel(operationsModel);
-		//((DefaultTableModel) tableOperations.getModel()).fireTableDataChanged();
-		
+	}
+	
+	private void refreshReportTable() {
 		List<String> reportCols = new ArrayList<>();
 		reportCols.add("Начало периода");
 		reportCols.add("Конец периода");
@@ -378,9 +457,9 @@ public class MainFrame extends JFrame {
 		reportCols.add("Ставка");
 		reportCols.add("Начислено процентов");
 		reportCols.add("Основной долг");
-		List<LocalDate> dates = loan.getDatesDivided();
+		List<LocalDate> dates = chbDateDivision.isSelected() ? loan.getDatesDivided() : loan.getDates();
 		Object[][] reportData = new Object[dates.size() / 2][6];
-		i = 0;
+		int i = 0;
 		for (int k = 0; k < dates.size() - 1; k += 2) {
 			LocalDate startDate = dates.get(k);
 			LocalDate endDate = dates.get(k + 1);

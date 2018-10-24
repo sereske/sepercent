@@ -1,5 +1,6 @@
 package ru.se.percent;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayList;
@@ -7,7 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class Loan {
+public class Loan implements Serializable {
+	
+	private static final long serialVersionUID = 1L;
+	
 	private String bank;
 	private String number;
 	private List<Operation> operations = new ArrayList<>();
@@ -55,6 +59,10 @@ public class Loan {
 	public void addOperation(Operation op) {
 		this.operations.add(op);
 	}
+	
+	public void removeOperation(Operation op) {
+		this.operations.remove(op);
+	}
 
 	public LocalDate getStartDate() {
 		return startDate;
@@ -90,6 +98,10 @@ public class Loan {
 	
 	public void addRate(LocalDate date, double rate) {
 		this.rates.put(date, rate);
+	}
+	
+	public void removeRate(LocalDate date) {
+		this.rates.remove(date);
 	}
 	
 	public double getPercent(LocalDate startDate, LocalDate endDate) {
