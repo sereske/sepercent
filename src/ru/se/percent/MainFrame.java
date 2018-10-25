@@ -20,6 +20,13 @@ import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +40,8 @@ import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.border.EtchedBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.JCheckBox;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
@@ -96,12 +105,43 @@ public class MainFrame extends JFrame {
 		JMenuItem mntmSave = new JMenuItem("Сохранить");
 		mntmSave.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				
+				try (FileOutputStream fos = new FileOutputStream("yourfile.txt");
+						ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+					//FileOutputStream fos = new FileOutputStream("yourfile.txt");
+					//ObjectOutputStream oos = new ObjectOutputStream(fos);
+					
+					oos.writeObject(loan);
+					System.out.println(loan);
+					//oos.flush();
+					//oos.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+					JOptionPane.showMessageDialog(MainFrame.this, 
+							"Ошибка при сохранении", 
+							e1.getMessage(), 
+							JOptionPane.ERROR_MESSAGE);
+				}
 			}
 		});
 		mnMain.add(mntmSave);
 		
 		JMenuItem mntmLoad = new JMenuItem("Загрузить");
+		mntmLoad.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try (FileInputStream fis
+					      = new FileInputStream("yourfile.txt");
+					    ObjectInputStream ois = new ObjectInputStream(fis)) {
+					loan = (Loan) ois.readObject();
+					System.out.println(loan);
+				} catch (IOException | ClassNotFoundException e2) {
+					e2.printStackTrace();
+					JOptionPane.showMessageDialog(MainFrame.this, 
+							"Ошибка при чтении", 
+							e2.getMessage(), 
+							JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		});
 		mnMain.add(mntmLoad);
 		
 		JMenu mnHelp = new JMenu("Справка");
@@ -131,6 +171,26 @@ public class MainFrame extends JFrame {
 		panelNorth.add(lblBank);
 		
 		tfBank = new JTextField();
+		/*
+		tfBank.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				System.out.println("1");
+				loan.setBank(tfBank.getText());
+			}
+			
+		});
+		tfBank.addPropertyChangeListener(new PropertyChangeListener() {
+
+			@Override
+			public void propertyChange(PropertyChangeEvent evt) {
+				System.out.println("2");
+				loan.setBank(tfBank.getText());
+			}
+			
+		});
+		*/
 		panelNorth.add(tfBank);
 		tfBank.setColumns(10);
 		

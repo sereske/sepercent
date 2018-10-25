@@ -20,6 +20,8 @@ public class Loan implements Serializable {
 	private int checkDay;
 	private Map<LocalDate, Double> rates = new TreeMap<>();
 	
+	public Loan() {}
+	
 	public Loan(String bank, String number, List<Operation> operations, LocalDate startDate,
 			LocalDate endDate, int checkDay, Map<LocalDate, Double> rates) {
 		super();
@@ -215,5 +217,11 @@ public class Loan implements Serializable {
 		*/
 		
 		return loan;
+	}
+
+	@Override
+	public String toString() {
+		return "Loan [bank=" + bank + ", number=" + number + ", operations=" + operations + ", startDate=" + startDate
+				+ ", endDate=" + endDate + ", checkDay=" + checkDay + ", rates=" + rates + "]";
 	}
 }

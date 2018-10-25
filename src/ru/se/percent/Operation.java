@@ -1,11 +1,17 @@
 package ru.se.percent;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 
-public class Operation {
+public class Operation implements Serializable {
+	
+	private static final long serialVersionUID = 1L;
+	
 	private LocalDate date;
 	private double sum;
 	private Type type;
+	
+	public Operation () {}
 	
 	public Operation(LocalDate date, double sum, Type type) {
 		super();
