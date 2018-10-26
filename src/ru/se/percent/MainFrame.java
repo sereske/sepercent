@@ -20,8 +20,11 @@ import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -70,11 +73,11 @@ public class MainFrame extends JFrame {
 	private JComboBox<ru.se.percent.Type> cmbOperation;
 	private JCheckBox chbDateDivision;
 
-	private Loan loan = Loan.getTestLoan();
+	private Loan loan;// = Loan.getTestLoan();
 	
-	/**
-	 * Launch the application.
-	 */
+	private static final String DEFAULT_FILE_NAME = "sepercent.txt";
+	private static final int DEFAULT_CHECKDAY = 28;
+	
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
@@ -102,47 +105,29 @@ public class MainFrame extends JFrame {
 		JMenu mnMain = new JMenu("Главная");
 		menuBar.add(mnMain);
 		
-		JMenuItem mntmSave = new JMenuItem("Сохранить");
+		JMenuItem mntmSave = new JMenuItem("Сохранить в файл");
 		mntmSave.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				try (FileOutputStream fos = new FileOutputStream("yourfile.txt");
-						ObjectOutputStream oos = new ObjectOutputStream(fos)) {
-					//FileOutputStream fos = new FileOutputStream("yourfile.txt");
-					//ObjectOutputStream oos = new ObjectOutputStream(fos);
-					
-					oos.writeObject(loan);
-					System.out.println(loan);
-					//oos.flush();
-					//oos.close();
-				} catch (IOException e1) {
-					e1.printStackTrace();
-					JOptionPane.showMessageDialog(MainFrame.this, 
-							"Ошибка при сохранении", 
-							e1.getMessage(), 
-							JOptionPane.ERROR_MESSAGE);
-				}
+				saveLoan();
 			}
 		});
 		mnMain.add(mntmSave);
 		
-		JMenuItem mntmLoad = new JMenuItem("Загрузить");
+		JMenuItem mntmLoad = new JMenuItem("Загрузить из файла");
 		mntmLoad.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				try (FileInputStream fis
-					      = new FileInputStream("yourfile.txt");
-					    ObjectInputStream ois = new ObjectInputStream(fis)) {
-					loan = (Loan) ois.readObject();
-					System.out.println(loan);
-				} catch (IOException | ClassNotFoundException e2) {
-					e2.printStackTrace();
-					JOptionPane.showMessageDialog(MainFrame.this, 
-							"Ошибка при чтении", 
-							e2.getMessage(), 
-							JOptionPane.ERROR_MESSAGE);
-				}
+				loadLoan();
 			}
 		});
 		mnMain.add(mntmLoad);
+		
+		JMenuItem mntmSettings = new JMenuItem("Настройки");
+		mntmSettings.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				
+			}
+		});
+		mnMain.add(mntmSettings);
 		
 		JMenu mnHelp = new JMenu("Справка");
 		menuBar.add(mnHelp);
@@ -151,7 +136,7 @@ public class MainFrame extends JFrame {
 		mntmAbout.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				JOptionPane.showMessageDialog(MainFrame.this, 
-						"Кредит СЭ 1.0", 
+						"Кредит СЭ 1.0 - калькулятор расчета процентов кредитов с нефиксированной процентной ставкой\nОРиПИС УИТ \"АО Сахаэнерго\"", 
 						"О программе", 
 						JOptionPane.PLAIN_MESSAGE);
 			}
@@ -161,73 +146,46 @@ public class MainFrame extends JFrame {
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
 		contentPane.setLayout(new BorderLayout(0, 0));
-		
-		JPanel panelNorth = new JPanel();
-		panelNorth.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
-		contentPane.add(panelNorth, BorderLayout.NORTH);
-		panelNorth.setLayout(new GridLayout(0, 4, 5, 5));
-		
-		JLabel lblBank = new JLabel("Банк");
-		panelNorth.add(lblBank);
-		
-		tfBank = new JTextField();
 		/*
-		tfBank.addActionListener(new ActionListener() {
+		tfBank.getDocument().addDocumentListener(new DocumentListener() {
 
 			@Override
-			public void actionPerformed(ActionEvent e) {
-				System.out.println("1");
+			public void insertUpdate(DocumentEvent e) {
+				onTextChanged();
+			}
+
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				onTextChanged();
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				onTextChanged();
+			}
+			
+			private void onTextChanged() {
+				System.out.println(tfBank.getText());
 				loan.setBank(tfBank.getText());
 			}
 			
 		});
-		tfBank.addPropertyChangeListener(new PropertyChangeListener() {
+		
+		tfBank.addFocusListener(new FocusListener() {
 
 			@Override
-			public void propertyChange(PropertyChangeEvent evt) {
-				System.out.println("2");
+			public void focusGained(FocusEvent e) {
+				
+			}
+
+			@Override
+			public void focusLost(FocusEvent e) {
+				System.out.println(tfBank.getText());
 				loan.setBank(tfBank.getText());
 			}
 			
 		});
 		*/
-		panelNorth.add(tfBank);
-		tfBank.setColumns(10);
-		
-		JLabel lblNumber = new JLabel("№ договора");
-		panelNorth.add(lblNumber);
-		
-		tfNumber = new JTextField();
-		panelNorth.add(tfNumber);
-		tfNumber.setColumns(10);
-		
-		JLabel lblStartDate = new JLabel("Дата начала");
-		panelNorth.add(lblStartDate);
-		
-		tfStartDate = new JTextField();
-		panelNorth.add(tfStartDate);
-		tfStartDate.setColumns(10);
-		
-		JLabel lblEndDate = new JLabel("Дата окончания");
-		panelNorth.add(lblEndDate);
-		
-		tfEndDate = new JTextField();
-		tfEndDate.setColumns(10);
-		panelNorth.add(tfEndDate);
-		
-		JLabel lblSum = new JLabel("Сумма кредита");
-		panelNorth.add(lblSum);
-		
-		tfSum = new JTextField();
-		tfSum.setColumns(10);
-		panelNorth.add(tfSum);
-		
-		JLabel lblCheckDay = new JLabel("День расчета");
-		panelNorth.add(lblCheckDay);
-		
-		tfCheckDay = new JTextField();
-		tfCheckDay.setColumns(10);
-		panelNorth.add(tfCheckDay);
 		
 		JPanel panelWest = new JPanel();
 		contentPane.add(panelWest, BorderLayout.WEST);
@@ -297,6 +255,7 @@ public class MainFrame extends JFrame {
 					model.removeRow(rowIndex);
 					loan.removeRate(date);
 				}
+				prepareTables();
 				//logRates();
 			}
 		});
@@ -312,6 +271,7 @@ public class MainFrame extends JFrame {
 					DefaultTableModel model = (DefaultTableModel) tableRate.getModel();
 					model.addRow(new Object[] {rateDate, rateValue});
 					loan.addRate(LocalDate.parse(rateDate), Double.parseDouble(rateValue));
+					prepareTables();
 				}
 				//logRates();
 			}
@@ -384,6 +344,7 @@ public class MainFrame extends JFrame {
 				Operation op = new Operation(LocalDate.parse(date), Double.parseDouble(sum), type);
 				loan.addOperation(op);
 				logOperations();
+				prepareTables();
 			}
 		});
 		btnAddOperation.setIcon(new ImageIcon(MainFrame.class.getResource("/images/icons8-plus-sign.png")));
@@ -403,13 +364,19 @@ public class MainFrame extends JFrame {
 					model.removeRow(rowIndex);
 				}
 				logOperations();
+				prepareTables();
 			}
 		});
 		btnDeleteOperation.setIcon(new ImageIcon(MainFrame.class.getResource("/images/icons8-delete-button.png")));
 		panelOperationsCmd.add(btnDeleteOperation);
 		
 		JPanel panelStatus = new JPanel();
+		FlowLayout flowLayout_1 = (FlowLayout) panelStatus.getLayout();
+		flowLayout_1.setAlignment(FlowLayout.LEADING);
 		contentPane.add(panelStatus, BorderLayout.SOUTH);
+		
+		JLabel lblStatus = new JLabel("Статус:");
+		panelStatus.add(lblStatus);
 		
 		JPanel panelReport = new JPanel();
 		panelReport.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
@@ -423,23 +390,6 @@ public class MainFrame extends JFrame {
 		panelReportCmd.add(lblReportTitle);
 		lblReportTitle.setHorizontalAlignment(SwingConstants.CENTER);
 		
-		chbDateDivision = new JCheckBox("Разделение месяца по дню расчета");
-		chbDateDivision.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				refreshReportTable();
-			}
-		});
-		chbDateDivision.setSelected(true);
-		panelReportCmd.add(chbDateDivision);
-		
-		JButton btnRefresh = new JButton("Обновить");
-		panelReportCmd.add(btnRefresh);
-		btnRefresh.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				refreshReportTable();
-			}
-		});
-		
 		
 		tableReport = new JTable();
 		//scrollPane4.add(tableReport);
@@ -448,6 +398,90 @@ public class MainFrame extends JFrame {
 		JScrollPane scrollPane4 = new JScrollPane(tableReport);
 		panelReport.add(scrollPane4, BorderLayout.CENTER);
 		
+		JPanel panelNorth = new JPanel();
+		contentPane.add(panelNorth, BorderLayout.NORTH);
+		panelNorth.setLayout(new BoxLayout(panelNorth, BoxLayout.Y_AXIS));
+		
+		JPanel panel = new JPanel();
+		FlowLayout flowLayout = (FlowLayout) panel.getLayout();
+		flowLayout.setAlignment(FlowLayout.LEADING);
+		panelNorth.add(panel);
+		
+		JButton btnSave = new JButton("Сохранить");
+		btnSave.setIcon(new ImageIcon(MainFrame.class.getResource("/images/icons8-save-40.png")));
+		panel.add(btnSave);
+		
+		JButton btnLoad = new JButton("Загрузить");
+		btnLoad.setIcon(new ImageIcon(MainFrame.class.getResource("/images/icons8-download-40.png")));
+		panel.add(btnLoad);
+		
+		chbDateDivision = new JCheckBox("Разделение месяца по дню расчета");
+		panel.add(chbDateDivision);
+		chbDateDivision.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				refreshReportTable();
+			}
+		});
+		chbDateDivision.setSelected(true);
+		
+		JButton btnRefresh = new JButton("Обновить отчет по процентам");
+		btnRefresh.setToolTipText("Обновить отчет по процентам");
+		btnRefresh.setIcon(new ImageIcon(MainFrame.class.getResource("/images/icons8-available-updates-40.png")));
+		panel.add(btnRefresh);
+		btnRefresh.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				refreshReportTable();
+			}
+		});
+		
+		JPanel panelProps = new JPanel();
+		panelNorth.add(panelProps);
+		panelProps.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
+		panelProps.setLayout(new GridLayout(0, 4, 5, 5));
+		
+		JLabel lblBank = new JLabel("Банк");
+		panelProps.add(lblBank);
+		
+		tfBank = new JTextField();
+		panelProps.add(tfBank);
+		tfBank.setColumns(10);
+		
+		JLabel lblNumber = new JLabel("№ договора");
+		panelProps.add(lblNumber);
+		
+		tfNumber = new JTextField();
+		panelProps.add(tfNumber);
+		tfNumber.setColumns(10);
+		
+		JLabel lblStartDate = new JLabel("Дата начала");
+		panelProps.add(lblStartDate);
+		
+		tfStartDate = new JTextField();
+		panelProps.add(tfStartDate);
+		tfStartDate.setColumns(10);
+		
+		JLabel lblEndDate = new JLabel("Дата окончания");
+		panelProps.add(lblEndDate);
+		
+		tfEndDate = new JTextField();
+		tfEndDate.setColumns(10);
+		panelProps.add(tfEndDate);
+		
+		JLabel lblSum = new JLabel("Сумма кредита");
+		panelProps.add(lblSum);
+		
+		tfSum = new JTextField();
+		tfSum.setColumns(10);
+		panelProps.add(tfSum);
+		
+		JLabel lblCheckDay = new JLabel("День расчета");
+		panelProps.add(lblCheckDay);
+		
+		tfCheckDay = new JTextField();
+		tfCheckDay.setColumns(10);
+		panelProps.add(tfCheckDay);
+		
+		loadLoan();
 		prepareProperties();
 		prepareTables();
 	}
@@ -468,7 +502,7 @@ public class MainFrame extends JFrame {
 		tfNumber.setText(loan.getNumber());
 		tfStartDate.setText(String.valueOf(loan.getStartDate()));
 		tfEndDate.setText(String.valueOf(loan.getEndDate()));
-		tfSum.setText(String.valueOf(loan.getOperations().get(0) == null ? 0 : loan.getOperations().get(0).getSum()));
+		tfSum.setText(String.valueOf(loan.getOperations().size() == 0 || loan.getOperations().get(0) == null ? 0 : loan.getOperations().get(0).getSum()));
 	}
 	
 	private void prepareTables() {
@@ -520,6 +554,7 @@ public class MainFrame extends JFrame {
 		List<LocalDate> dates = chbDateDivision.isSelected() ? loan.getDatesDivided() : loan.getDates();
 		Object[][] reportData = new Object[dates.size() / 2][6];
 		int i = 0;
+		try {
 		for (int k = 0; k < dates.size() - 1; k += 2) {
 			LocalDate startDate = dates.get(k);
 			LocalDate endDate = dates.get(k + 1);
@@ -535,8 +570,51 @@ public class MainFrame extends JFrame {
 			reportData[i][5] = debt;
 			i++;
 		}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		TableModel reportModel = new DefaultTableModel(reportData, reportCols.toArray());
 		tableReport.setModel(reportModel);
+	}
+	
+	private void updateLoanPropsFromUI() {
+		loan.setBank(tfBank.getText());
+		loan.setNumber(tfNumber.getText());
+		loan.setCheckDay(Integer.parseInt(tfCheckDay.getText().isEmpty() ? String.valueOf(DEFAULT_CHECKDAY) : tfCheckDay.getText()));
+		loan.setStartDate(LocalDate.parse(tfStartDate.getText().isEmpty() ? LocalDate.now().toString() : tfStartDate.getText()));
+		loan.setEndDate(LocalDate.parse(tfEndDate.getText().isEmpty() ? LocalDate.now().plusYears(1).toString() : tfEndDate.getText()));
+	}
+	
+	private void loadLoan() {
+		loan = new Loan();
+		saveLoan();
+		try (FileInputStream fis
+			      = new FileInputStream(DEFAULT_FILE_NAME);
+			    ObjectInputStream ois = new ObjectInputStream(fis)) {
+			loan = (Loan) ois.readObject();
+			System.out.println(loan);
+		} catch (IOException | ClassNotFoundException e2) {
+			e2.printStackTrace();
+			JOptionPane.showMessageDialog(MainFrame.this, 
+					"Ошибка при чтении", 
+					e2.getMessage(), 
+					JOptionPane.ERROR_MESSAGE);
+		}
+	}
+	
+	private void saveLoan() {
+		try (FileOutputStream fos = new FileOutputStream(DEFAULT_FILE_NAME);
+				ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+			updateLoanPropsFromUI();
+			oos.writeObject(loan);
+			System.out.println(loan);
+		} catch (IOException e1) {
+			e1.printStackTrace();
+			JOptionPane.showMessageDialog(MainFrame.this, 
+					"Ошибка при сохранении", 
+					e1.getMessage(), 
+					JOptionPane.ERROR_MESSAGE);
+		}
 	}
 
 }

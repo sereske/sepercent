@@ -20,7 +20,15 @@ public class Loan implements Serializable {
 	private int checkDay;
 	private Map<LocalDate, Double> rates = new TreeMap<>();
 	
-	public Loan() {}
+	public Loan() {
+		bank = "Банк";
+		number = "1";
+		startDate = LocalDate.now();
+		endDate = startDate.plusYears(1);
+		checkDay = 28;
+		operations.add(new Operation(startDate, 100_000_000, Type.MAIN_RECEIVED));
+		rates.put(startDate, 10.0);
+	}
 	
 	public Loan(String bank, String number, List<Operation> operations, LocalDate startDate,
 			LocalDate endDate, int checkDay, Map<LocalDate, Double> rates) {
