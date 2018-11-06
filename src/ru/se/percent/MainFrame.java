@@ -26,6 +26,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -34,6 +35,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Vector;
 import java.awt.event.ActionEvent;
 import javax.swing.SwingConstants;
@@ -41,6 +43,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.border.EtchedBorder;
 import javax.swing.event.DocumentEvent;
@@ -74,8 +77,11 @@ public class MainFrame extends JFrame {
 	private JCheckBox chbDateDivision;
 
 	private Loan loan;// = Loan.getTestLoan();
+	private String currentFileName;
 	
-	private static final String DEFAULT_FILE_NAME = "sepercent.txt";
+	//private static final String DEFAULT_FILE_NAME = "data\\sepercent.txt";
+	private static final String SETTINGS_FILE_NAME = "settings.txt";
+	
 	private static final int DEFAULT_CHECKDAY = 28;
 	
 	public static void main(String[] args) {
@@ -108,7 +114,7 @@ public class MainFrame extends JFrame {
 		JMenuItem mntmSave = new JMenuItem("Сохранить в файл");
 		mntmSave.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				saveLoan();
+				saveLoan(currentFileName);
 			}
 		});
 		mnMain.add(mntmSave);
@@ -120,14 +126,6 @@ public class MainFrame extends JFrame {
 			}
 		});
 		mnMain.add(mntmLoad);
-		
-		JMenuItem mntmSettings = new JMenuItem("Настройки");
-		mntmSettings.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				
-			}
-		});
-		mnMain.add(mntmSettings);
 		
 		JMenu mnHelp = new JMenu("Справка");
 		menuBar.add(mnHelp);
@@ -481,6 +479,7 @@ public class MainFrame extends JFrame {
 		tfCheckDay.setColumns(10);
 		panelProps.add(tfCheckDay);
 		
+		loadSettings();
 		loadLoan();
 		prepareProperties();
 		prepareTables();
@@ -585,25 +584,58 @@ public class MainFrame extends JFrame {
 		loan.setEndDate(LocalDate.parse(tfEndDate.getText().isEmpty() ? LocalDate.now().plusYears(1).toString() : tfEndDate.getText()));
 	}
 	
+	private void loadSettings() {
+		Properties props = new Properties();
+		try {
+			props.load(new FileInputStream(SETTINGS_FILE_NAME));
+			currentFileName = props.getProperty("currentFileName");
+		} catch (IOException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(MainFrame.this, 
+					"Ошибка при чтении настроек", 
+					e.getMessage(), 
+					JOptionPane.ERROR_MESSAGE);
+			MainFrame.this.setVisible(false);
+			MainFrame.this.dispose();
+		} 
+	}
+	
+	private void saveSettings() {
+		
+	}
+	
 	private void loadLoan() {
 		loan = new Loan();
-		saveLoan();
+		saveLoan(currentFileName);
 		try (FileInputStream fis
-			      = new FileInputStream(DEFAULT_FILE_NAME);
+			      = new FileInputStream(currentFileName);
 			    ObjectInputStream ois = new ObjectInputStream(fis)) {
 			loan = (Loan) ois.readObject();
 			System.out.println(loan);
-		} catch (IOException | ClassNotFoundException e2) {
-			e2.printStackTrace();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
 			JOptionPane.showMessageDialog(MainFrame.this, 
-					"Ошибка при чтении", 
-					e2.getMessage(), 
+					"Ошибка при чтении - FileNotFoundException", 
+					e.getMessage(), 
+					JOptionPane.ERROR_MESSAGE);
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(MainFrame.this, 
+					"Ошибка при чтении - IOException", 
+					e.getMessage(), 
+					JOptionPane.ERROR_MESSAGE);
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(MainFrame.this, 
+					"Ошибка при чтении - ClassNotFoundException", 
+					e.getMessage(), 
 					JOptionPane.ERROR_MESSAGE);
 		}
 	}
 	
-	private void saveLoan() {
-		try (FileOutputStream fos = new FileOutputStream(DEFAULT_FILE_NAME);
+	private void saveLoan(String fileName) {
+		try (FileOutputStream fos = new FileOutputStream(fileName);
 				ObjectOutputStream oos = new ObjectOutputStream(fos)) {
 			updateLoanPropsFromUI();
 			oos.writeObject(loan);
