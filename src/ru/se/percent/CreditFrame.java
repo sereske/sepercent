@@ -41,6 +41,13 @@ import java.awt.event.ActionEvent;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
@@ -54,7 +61,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 
-public class MainFrame extends JFrame {
+public class CreditFrame extends JFrame {
 
 	private JPanel contentPane;
 	
@@ -80,7 +87,7 @@ public class MainFrame extends JFrame {
 	private String currentFileName;
 	
 	//private static final String DEFAULT_FILE_NAME = "data\\sepercent.txt";
-	private static final String SETTINGS_FILE_NAME = "settings.txt";
+	private static final String SETTINGS_FILE_NAME = "settings.properties";
 	
 	private static final int DEFAULT_CHECKDAY = 28;
 	
@@ -88,7 +95,7 @@ public class MainFrame extends JFrame {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					MainFrame frame = new MainFrame();
+					CreditFrame frame = new CreditFrame();
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -100,7 +107,7 @@ public class MainFrame extends JFrame {
 	/**
 	 * Create the frame.
 	 */
-	public MainFrame() {
+	public CreditFrame() {
 		setTitle("Кредит СЭ");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 1530, 850);
@@ -133,7 +140,7 @@ public class MainFrame extends JFrame {
 		JMenuItem mntmAbout = new JMenuItem("О программе");
 		mntmAbout.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				JOptionPane.showMessageDialog(MainFrame.this, 
+				JOptionPane.showMessageDialog(CreditFrame.this, 
 						"Кредит СЭ 1.0 - калькулятор расчета процентов кредитов с нефиксированной процентной ставкой\nОРиПИС УИТ \"АО Сахаэнерго\"", 
 						"О программе", 
 						JOptionPane.PLAIN_MESSAGE);
@@ -237,7 +244,7 @@ public class MainFrame extends JFrame {
 		
 		JButton btnAddRate = new JButton();
 		panelRateCmd.add(btnAddRate);
-		btnAddRate.setIcon(new ImageIcon(MainFrame.class.getResource("/images/icons8-plus-sign.png")));
+		btnAddRate.setIcon(new ImageIcon(CreditFrame.class.getResource("/images/icons8-plus-sign.png")));
 		
 		JButton btnDeleteRate = new JButton();
 		btnDeleteRate.addActionListener(new ActionListener() {
@@ -258,7 +265,7 @@ public class MainFrame extends JFrame {
 			}
 		});
 		panelRateCmd.add(btnDeleteRate);
-		btnDeleteRate.setIcon(new ImageIcon(MainFrame.class.getResource("/images/icons8-delete-button.png")));
+		btnDeleteRate.setIcon(new ImageIcon(CreditFrame.class.getResource("/images/icons8-delete-button.png")));
 		//System.out.println(MainFrame.class.getResource("/images/icons8-plus-sign.png"));
 		//System.out.println(MainFrame.class.getResource("/images/icons8-edit.png"));
 		btnAddRate.addActionListener(new ActionListener() {
@@ -345,7 +352,7 @@ public class MainFrame extends JFrame {
 				prepareTables();
 			}
 		});
-		btnAddOperation.setIcon(new ImageIcon(MainFrame.class.getResource("/images/icons8-plus-sign.png")));
+		btnAddOperation.setIcon(new ImageIcon(CreditFrame.class.getResource("/images/icons8-plus-sign.png")));
 		panelOperationsCmd.add(btnAddOperation);
 		
 		JButton btnDeleteOperation = new JButton("");
@@ -365,7 +372,7 @@ public class MainFrame extends JFrame {
 				prepareTables();
 			}
 		});
-		btnDeleteOperation.setIcon(new ImageIcon(MainFrame.class.getResource("/images/icons8-delete-button.png")));
+		btnDeleteOperation.setIcon(new ImageIcon(CreditFrame.class.getResource("/images/icons8-delete-button.png")));
 		panelOperationsCmd.add(btnDeleteOperation);
 		
 		JPanel panelStatus = new JPanel();
@@ -406,11 +413,11 @@ public class MainFrame extends JFrame {
 		panelNorth.add(panel);
 		
 		JButton btnSave = new JButton("Сохранить");
-		btnSave.setIcon(new ImageIcon(MainFrame.class.getResource("/images/icons8-save-40.png")));
+		btnSave.setIcon(new ImageIcon(CreditFrame.class.getResource("/images/icons8-save-40.png")));
 		panel.add(btnSave);
 		
 		JButton btnLoad = new JButton("Загрузить");
-		btnLoad.setIcon(new ImageIcon(MainFrame.class.getResource("/images/icons8-download-40.png")));
+		btnLoad.setIcon(new ImageIcon(CreditFrame.class.getResource("/images/icons8-download-40.png")));
 		panel.add(btnLoad);
 		
 		chbDateDivision = new JCheckBox("Разделение месяца по дню расчета");
@@ -424,7 +431,7 @@ public class MainFrame extends JFrame {
 		
 		JButton btnRefresh = new JButton("Обновить отчет по процентам");
 		btnRefresh.setToolTipText("Обновить отчет по процентам");
-		btnRefresh.setIcon(new ImageIcon(MainFrame.class.getResource("/images/icons8-available-updates-40.png")));
+		btnRefresh.setIcon(new ImageIcon(CreditFrame.class.getResource("/images/icons8-available-updates-40.png")));
 		panel.add(btnRefresh);
 		btnRefresh.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -591,12 +598,12 @@ public class MainFrame extends JFrame {
 			currentFileName = props.getProperty("currentFileName");
 		} catch (IOException e) {
 			e.printStackTrace();
-			JOptionPane.showMessageDialog(MainFrame.this, 
+			JOptionPane.showMessageDialog(CreditFrame.this, 
 					"Ошибка при чтении настроек", 
 					e.getMessage(), 
 					JOptionPane.ERROR_MESSAGE);
-			MainFrame.this.setVisible(false);
-			MainFrame.this.dispose();
+			CreditFrame.this.setVisible(false);
+			CreditFrame.this.dispose();
 		} 
 	}
 	
@@ -614,20 +621,20 @@ public class MainFrame extends JFrame {
 			System.out.println(loan);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
-			JOptionPane.showMessageDialog(MainFrame.this, 
+			JOptionPane.showMessageDialog(CreditFrame.this, 
 					"Ошибка при чтении - FileNotFoundException", 
 					e.getMessage(), 
 					JOptionPane.ERROR_MESSAGE);
 			
 		} catch (IOException e) {
 			e.printStackTrace();
-			JOptionPane.showMessageDialog(MainFrame.this, 
+			JOptionPane.showMessageDialog(CreditFrame.this, 
 					"Ошибка при чтении - IOException", 
 					e.getMessage(), 
 					JOptionPane.ERROR_MESSAGE);
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
-			JOptionPane.showMessageDialog(MainFrame.this, 
+			JOptionPane.showMessageDialog(CreditFrame.this, 
 					"Ошибка при чтении - ClassNotFoundException", 
 					e.getMessage(), 
 					JOptionPane.ERROR_MESSAGE);
@@ -642,10 +649,41 @@ public class MainFrame extends JFrame {
 			System.out.println(loan);
 		} catch (IOException e1) {
 			e1.printStackTrace();
-			JOptionPane.showMessageDialog(MainFrame.this, 
+			JOptionPane.showMessageDialog(CreditFrame.this, 
 					"Ошибка при сохранении", 
 					e1.getMessage(), 
 					JOptionPane.ERROR_MESSAGE);
+		}
+	}
+	
+	private void saveLoanJackson(String fileName) {
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			mapper.writeValue(new FileOutputStream(fileName), loan);
+		} catch (JsonGenerationException e) {
+			e.printStackTrace();
+		} catch (JsonMappingException e) {
+			e.printStackTrace();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void loadLoanJackson() {
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			Loan user = (Loan) mapper.readValue(new FileInputStream(currentFileName),
+			    Loan.class);
+		} catch (JsonParseException e) {
+			e.printStackTrace();
+		} catch (JsonMappingException e) {
+			e.printStackTrace();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
