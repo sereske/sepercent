@@ -7,6 +7,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.JTree;
+import javax.swing.ListModel;
 import javax.swing.JList;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -52,9 +53,11 @@ import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListModel;
 import javax.swing.border.EtchedBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.event.ListDataListener;
 import javax.swing.JCheckBox;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
@@ -82,6 +85,13 @@ public class CreditFrame extends JFrame {
 	private JTextField tfOperationsSum;
 	private JComboBox<ru.se.percent.Type> cmbOperation;
 	private JCheckBox chbDateDivision;
+	private JButton btnAddOperation;
+	private JButton btnDeleteOperation;
+	private JButton btnAddRate;
+	private JButton btnDeleteRate;
+	private JButton btnUpdateLoan;
+	private JButton btnDeleteLoan;
+	private JButton btnAddLoan;
 
 	private DataHelper helper;
 	private List<Loan> loans;
@@ -89,10 +99,9 @@ public class CreditFrame extends JFrame {
 	
 	//private static final String DEFAULT_FILE_NAME = "data\\sepercent.txt";
 	//private static final String SETTINGS_FILE_NAME = "settings.properties";
-	private static final String DATA_FOLDER = "data";
 	
 	private static final int DEFAULT_CHECKDAY = 28;
-	private JList<Loan> tableCreditList;
+	private JList<Loan> listLoan;
 	
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
@@ -112,7 +121,7 @@ public class CreditFrame extends JFrame {
 	 */
 	public CreditFrame() {
 		helper = DataHelper.getInstance();
-		loans = helper.loadLoans(DATA_FOLDER);
+		loans = DataHelper.loadLoans();
 		loan = null;
 		createFrame();
 		
@@ -147,39 +156,47 @@ public class CreditFrame extends JFrame {
 	}
 	
 	private void refreshCreditList() {
-		
+		DefaultListModel<Loan> loanModel = new DefaultListModel<>();
+		for (Loan loan : loans) {
+			loanModel.addElement(loan);
+		}
+		listLoan.setModel(loanModel);
 	}
 	
 	private void refreshRateTable() {
-		List<String> rateCols = new ArrayList<>();
-		rateCols.add("Дата");
-		rateCols.add("Процентная ставка");
-		Object[][] rateData = new Object[loan.getRates().entrySet().size()][2];
-		int i = 0;
-		for (Map.Entry<LocalDate, Double> pair : loan.getRates().entrySet()) {
-			rateData[i][0] = pair.getKey();
-			rateData[i][1] = pair.getValue();
-			i++;
+		if (loan != null) {
+			List<String> rateCols = new ArrayList<>();
+			rateCols.add("Дата");
+			rateCols.add("Процентная ставка");
+			Object[][] rateData = new Object[loan.getRates().entrySet().size()][2];
+			int i = 0;
+			for (Map.Entry<LocalDate, Double> pair : loan.getRates().entrySet()) {
+				rateData[i][0] = pair.getKey();
+				rateData[i][1] = pair.getValue();
+				i++;
+			}
+			TableModel rateModel = new DefaultTableModel(rateData, rateCols.toArray());
+			tableRate.setModel(rateModel);
 		}
-		TableModel rateModel = new DefaultTableModel(rateData, rateCols.toArray());
-		tableRate.setModel(rateModel);
 	}
 	
 	private void refreshOperationsTable() {
-		List<String> operationsCols = new ArrayList<>();
-		operationsCols.add("Дата");
-		operationsCols.add("Тип");
-		operationsCols.add("Сумма");
-		Object[][] operationsData = new Object[loan.getOperations().size()][3];
-		int i = 0;
-		for (Operation op : loan.getOperations()) {
-			operationsData[i][0] = op.getDate();
-			operationsData[i][1] = op.getType();
-			operationsData[i][2] = op.getSum();
-			i++;
+		if (loan != null) {
+			List<String> operationsCols = new ArrayList<>();
+			operationsCols.add("Дата");
+			operationsCols.add("Тип");
+			operationsCols.add("Сумма");
+			Object[][] operationsData = new Object[loan.getOperations().size()][3];
+			int i = 0;
+			for (Operation op : loan.getOperations()) {
+				operationsData[i][0] = op.getDate();
+				operationsData[i][1] = op.getType();
+				operationsData[i][2] = op.getSum();
+				i++;
+			}
+			TableModel operationsModel = new DefaultTableModel(operationsData, operationsCols.toArray());
+			tableOperations.setModel(operationsModel);
 		}
-		TableModel operationsModel = new DefaultTableModel(operationsData, operationsCols.toArray());
-		tableOperations.setModel(operationsModel);
 	}
 	
 	private void refreshReportTable() {
@@ -190,30 +207,32 @@ public class CreditFrame extends JFrame {
 		reportCols.add("Ставка");
 		reportCols.add("Начислено процентов");
 		reportCols.add("Основной долг");
-		List<LocalDate> dates = chbDateDivision.isSelected() ? loan.getDatesDivided() : loan.getDates();
-		Object[][] reportData = new Object[dates.size() / 2][6];
-		int i = 0;
-		try {
-		for (int k = 0; k < dates.size() - 1; k += 2) {
-			LocalDate startDate = dates.get(k);
-			LocalDate endDate = dates.get(k + 1);
-			double percent = loan.getPercent(startDate, endDate);
-			double rate = loan.getCurrentRate(endDate);
-			long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
-			double debt = loan.getCurrentDebt(endDate);
-			reportData[i][0] = startDate;
-			reportData[i][1] = endDate;
-			reportData[i][2] = daysBetween;
-			reportData[i][3] = rate;
-			reportData[i][4] = percent;
-			reportData[i][5] = debt;
-			i++;
+		if (loan != null) {
+			List<LocalDate> dates = chbDateDivision.isSelected() ? loan.getDatesDivided() : loan.getDates();
+			Object[][] reportData = new Object[dates.size() / 2][6];
+			int i = 0;
+			try {
+			for (int k = 0; k < dates.size() - 1; k += 2) {
+				LocalDate startDate = dates.get(k);
+				LocalDate endDate = dates.get(k + 1);
+				double percent = loan.getPercent(startDate, endDate);
+				double rate = loan.getCurrentRate(endDate);
+				long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
+				double debt = loan.getCurrentDebt(endDate);
+				reportData[i][0] = startDate;
+				reportData[i][1] = endDate;
+				reportData[i][2] = daysBetween;
+				reportData[i][3] = rate;
+				reportData[i][4] = percent;
+				reportData[i][5] = debt;
+				i++;
+			}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			TableModel reportModel = new DefaultTableModel(reportData, reportCols.toArray());
+			tableReport.setModel(reportModel);
 		}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		TableModel reportModel = new DefaultTableModel(reportData, reportCols.toArray());
-		tableReport.setModel(reportModel);
 	}
 	
 	private void updateLoanPropsFromUI() {
@@ -222,6 +241,12 @@ public class CreditFrame extends JFrame {
 		loan.setCheckDay(Integer.parseInt(tfCheckDay.getText().isEmpty() ? String.valueOf(DEFAULT_CHECKDAY) : tfCheckDay.getText()));
 		loan.setStartDate(LocalDate.parse(tfStartDate.getText().isEmpty() ? LocalDate.now().toString() : tfStartDate.getText()));
 		loan.setEndDate(LocalDate.parse(tfEndDate.getText().isEmpty() ? LocalDate.now().plusYears(1).toString() : tfEndDate.getText()));
+	}
+	
+	private void updateLoans() {
+		updateLoanPropsFromUI();
+		int index = loans.indexOf(loan);
+		loans.set(index, loan);
 	}
 	
 	/*
@@ -296,40 +321,67 @@ public class CreditFrame extends JFrame {
 		contentPane.add(panelEast, BorderLayout.EAST);
 		panelEast.setLayout(new BoxLayout(panelEast, BoxLayout.Y_AXIS));
 		
-		JPanel panelCreditList = new JPanel();
-		panelEast.add(panelCreditList);
-		panelCreditList.setLayout(new BorderLayout(0, 0));
+		JPanel panelLoanList = new JPanel();
+		panelEast.add(panelLoanList);
+		panelLoanList.setLayout(new BorderLayout(0, 0));
 		
 		JPanel panelListCmd = new JPanel();
-		panelCreditList.add(panelListCmd, BorderLayout.NORTH);
+		panelLoanList.add(panelListCmd, BorderLayout.NORTH);
 		
 		JLabel lblListTitle = new JLabel("Список кредитов");
 		panelListCmd.add(lblListTitle);
 		
-		tableCreditList = new JList();
+		listLoan = new JList();
 		
-		JScrollPane scrollPane5 = new JScrollPane(tableCreditList);
-		panelCreditList.add(scrollPane5, BorderLayout.CENTER);
+		JScrollPane scrollPane5 = new JScrollPane(listLoan);
+		panelLoanList.add(scrollPane5, BorderLayout.CENTER);
 		
-		JPanel panelCredit = new JPanel();
-		panelEast.add(panelCredit);
-		panelCredit.setLayout(new BorderLayout(0, 0));
+		JPanel panelLoan = new JPanel();
+		panelEast.add(panelLoan);
+		panelLoan.setLayout(new BorderLayout(0, 0));
 		
 		JPanel panel = new JPanel();
-		panelCredit.add(panel, BorderLayout.NORTH);
+		panelLoan.add(panel, BorderLayout.NORTH);
 		
 		JLabel lblCreditLabel = new JLabel("Кредит");
 		panel.add(lblCreditLabel);
 		lblCreditLabel.setHorizontalAlignment(SwingConstants.CENTER);
 		
-		JButton btnAddCredit = new JButton("+");
-		panel.add(btnAddCredit);
+		btnAddLoan = new JButton("+");
+		btnAddLoan.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (loan != null) {
+					loans.add(loan);
+				}
+			}
+		});
+		panel.add(btnAddLoan);
 		
-		JButton btnDeleteCredit = new JButton("x");
-		panel.add(btnDeleteCredit);
+		btnDeleteLoan = new JButton("x");
+		btnDeleteLoan.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (loan != null) {
+					loans.remove(loan);
+					if (loans.size() == 0) {
+						
+					} else {
+						loan = loans.get(0);
+					}
+				}
+			}
+		});
+		panel.add(btnDeleteLoan);
+		
+		btnUpdateLoan = new JButton("Обновить");
+		btnUpdateLoan.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				updateLoans();
+			}
+		});
+		panel.add(btnUpdateLoan);
 		
 		JPanel panelProps = new JPanel();
-		panelCredit.add(panelProps, BorderLayout.CENTER);
+		panelLoan.add(panelProps, BorderLayout.CENTER);
 		panelProps.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
 		panelProps.setLayout(new GridLayout(0, 2, 5, 5));
 		
@@ -412,11 +464,11 @@ public class CreditFrame extends JFrame {
 		panelRateForm.add(tfRateValue);
 		tfRateValue.setColumns(10);
 		
-		JButton btnAddRate = new JButton();
+		btnAddRate = new JButton();
 		btnAddRate.setText("+");
 		panelRateForm.add(btnAddRate);
 		
-		JButton btnDeleteRate = new JButton();
+		btnDeleteRate = new JButton();
 		btnDeleteRate.setText("x");
 		panelRateForm.add(btnDeleteRate);
 		btnDeleteRate.addActionListener(new ActionListener() {
@@ -489,7 +541,7 @@ public class CreditFrame extends JFrame {
 		panelOperationsForm.add(tfOperationsSum);
 		tfOperationsSum.setColumns(10);
 		
-		JButton btnAddOperation = new JButton("+");
+		btnAddOperation = new JButton("+");
 		panelOperationsForm.add(btnAddOperation);
 		btnAddOperation.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -506,7 +558,7 @@ public class CreditFrame extends JFrame {
 		});
 		btnAddOperation.setIcon(null);
 		
-		JButton btnDeleteOperation = new JButton("x");
+		btnDeleteOperation = new JButton("x");
 		panelOperationsForm.add(btnDeleteOperation);
 		btnDeleteOperation.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -570,6 +622,22 @@ public class CreditFrame extends JFrame {
 		
 		JScrollPane scrollPane4 = new JScrollPane(tableReport);
 		panelReport.add(scrollPane4, BorderLayout.CENTER);
+		
+		activateRateOperationButtons();
+	}
+	
+	private void activateRateOperationButtons() {
+		if (loan == null) {
+			btnAddRate.setEnabled(false);
+			btnDeleteRate.setEnabled(false);
+			btnAddOperation.setEnabled(false);
+			btnDeleteOperation.setEnabled(false);
+		} else {
+			btnAddRate.setEnabled(true);
+			btnDeleteRate.setEnabled(true);
+			btnAddOperation.setEnabled(true);
+			btnDeleteOperation.setEnabled(true);
+		}
 	}
 	
 	private void loadLoan(String fileName) {
@@ -601,6 +669,4 @@ public class CreditFrame extends JFrame {
 		}
 	}
 	
-	
-
 }

@@ -1,10 +1,12 @@
 package ru.se.percent;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +18,8 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class DataHelper {
+	
+	private static final String DATA_FOLDER = "data";
 	
 	private static DataHelper instance;
 	
@@ -61,9 +65,13 @@ public class DataHelper {
 		return null;
 	}
 	
-	public static List<Loan> loadLoans(String folder) {
+	public static List<Loan> loadLoans() {
 		List<Loan> loans = new ArrayList<>();
-		
+		File folder = new File(DATA_FOLDER);
+		for (File file : folder.listFiles()) {
+			Loan loan = loadLoanJackson(file.getName());
+			loans.add(loan);
+		}
 		return loans;
 	}
 }

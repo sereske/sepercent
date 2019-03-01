@@ -7,11 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.UUID;
 
 public class Loan implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
 	
+	private UUID id;
 	private String bank;
 	private String number;
 	private List<Operation> operations = new ArrayList<>();
@@ -21,6 +23,7 @@ public class Loan implements Serializable {
 	private Map<LocalDate, Double> rates = new TreeMap<>();
 	
 	public Loan() {
+		id = UUID.randomUUID();
 		bank = "Банк";
 		number = "1";
 		startDate = LocalDate.now();
@@ -33,6 +36,7 @@ public class Loan implements Serializable {
 	public Loan(String bank, String number, List<Operation> operations, LocalDate startDate,
 			LocalDate endDate, int checkDay, Map<LocalDate, Double> rates) {
 		super();
+		this.id = UUID.randomUUID();
 		this.bank = bank;
 		this.number = number;
 		this.operations = operations;
@@ -42,6 +46,10 @@ public class Loan implements Serializable {
 		this.rates = rates;
 	}
 
+	public UUID getId() {
+		return id;
+	}
+	
 	public String getBank() {
 		return bank;
 	}
@@ -231,5 +239,18 @@ public class Loan implements Serializable {
 	public String toString() {
 		return "Loan [bank=" + bank + ", number=" + number + ", operations=" + operations + ", startDate=" + startDate
 				+ ", endDate=" + endDate + ", checkDay=" + checkDay + ", rates=" + rates + "]";
+	}
+
+	@Override
+	public int hashCode() {
+		return super.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) return false;
+		if (!(obj instanceof Loan)) return false;
+		Loan other = (Loan) obj;
+		return this.id == other.id;
 	}
 }
