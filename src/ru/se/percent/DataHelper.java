@@ -65,6 +65,10 @@ public class DataHelper {
 		return null;
 	}
 	
+	public static void saveLoan(String fileName, Loan loan) {
+		saveLoanJackson(fileName, loan);
+	}
+	
 	public static List<Loan> loadLoans() {
 		List<Loan> loans = new ArrayList<>();
 		File folder = new File(DATA_FOLDER);

@@ -236,6 +236,9 @@ public class CreditFrame extends JFrame {
 	}
 	
 	private void updateLoanPropsFromUI() {
+		if (loan == null) {
+			loan = new Loan();
+		}
 		loan.setBank(tfBank.getText());
 		loan.setNumber(tfNumber.getText());
 		loan.setCheckDay(Integer.parseInt(tfCheckDay.getText().isEmpty() ? String.valueOf(DEFAULT_CHECKDAY) : tfCheckDay.getText()));
@@ -350,9 +353,10 @@ public class CreditFrame extends JFrame {
 		btnAddLoan = new JButton("+");
 		btnAddLoan.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (loan != null) {
-					loans.add(loan);
-				}
+				updateLoanPropsFromUI();
+				loans.add(loan);
+				DataHelper.saveLoan(String.valueOf(loan.getBank() + loan.getId()), loan);
+				refreshCreditList();
 			}
 		});
 		panel.add(btnAddLoan);

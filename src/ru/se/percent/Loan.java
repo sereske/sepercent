@@ -24,13 +24,13 @@ public class Loan implements Serializable {
 	
 	public Loan() {
 		id = UUID.randomUUID();
-		bank = "Банк";
-		number = "1";
-		startDate = LocalDate.now();
-		endDate = startDate.plusYears(1);
-		checkDay = 28;
-		operations.add(new Operation(startDate, 100_000_000, Type.MAIN_RECEIVED));
-		rates.put(startDate, 10.0);
+		//bank = "Банк";
+		//number = "1";
+		//startDate = LocalDate.now();
+		//endDate = startDate.plusYears(1);
+		//checkDay = 28;
+		//operations.add(new Operation(startDate, 100_000_000, Type.MAIN_RECEIVED));
+		//rates.put(startDate, 10.0);
 	}
 	
 	public Loan(String bank, String number, List<Operation> operations, LocalDate startDate,
