@@ -9,6 +9,9 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.key.LocalDateKeyDeserializer;
+
 public class Loan implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
@@ -20,6 +23,7 @@ public class Loan implements Serializable {
 	private LocalDate startDate;
 	private LocalDate endDate;
 	private int checkDay;
+	//@JsonDeserialize()
 	private Map<LocalDate, Double> rates = new TreeMap<>();
 	
 	public Loan() {
