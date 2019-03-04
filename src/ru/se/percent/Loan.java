@@ -126,6 +126,10 @@ public class Loan implements Serializable {
 		this.rates.remove(date);
 	}
 	
+	public double getInitialSum() {
+		return getCurrentDebt(startDate);
+	}
+	
 	public double getPercent(LocalDate startDate, LocalDate endDate) {
 		double currentPercent = 0.0;
 		double currentDebt = 0.0;
@@ -156,7 +160,8 @@ public class Loan implements Serializable {
 	
 	public double getCurrentRate(LocalDate date) {
 		LocalDate currentDate = date;
-		while (!rates.containsKey(currentDate)) {
+		//while (!rates.isEmpty() && !rates.containsKey(currentDate)) {
+		while (!rates.isEmpty() && !rates.containsKey(currentDate)) {
 			currentDate = currentDate.minusDays(1);
 		}
 		return rates.get(currentDate) / 100;

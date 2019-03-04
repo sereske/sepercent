@@ -58,6 +58,8 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ListDataListener;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.JCheckBox;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
@@ -126,6 +128,7 @@ public class CreditFrame extends JFrame {
 		createFrame();
 		
 		prepareProperties();
+		refreshLoanList();
 		prepareTables();
 	}
 	
@@ -144,18 +147,18 @@ public class CreditFrame extends JFrame {
 			tfNumber.setText(loan.getNumber());
 			tfStartDate.setText(String.valueOf(loan.getStartDate()));
 			tfEndDate.setText(String.valueOf(loan.getEndDate()));
-			tfSum.setText(String.valueOf(loan.getOperations().size() == 0 || loan.getOperations().get(0) == null ? 0 : loan.getOperations().get(0).getSum()));
+			//tfSum.setText(String.valueOf(loan.getOperations().size() == 0 || loan.getOperations().get(0) == null ? 0 : loan.getOperations().get(0).getSum()));
 		}
 	}
 	
 	private void prepareTables() {
-		refreshCreditList();
+		//refreshLoanList();
 		refreshRateTable();
 		refreshOperationsTable();
 		refreshReportTable();
 	}
 	
-	private void refreshCreditList() {
+	private void refreshLoanList() {
 		DefaultListModel<Loan> loanModel = new DefaultListModel<>();
 		for (Loan loan : loans) {
 			loanModel.addElement(loan);
@@ -207,7 +210,7 @@ public class CreditFrame extends JFrame {
 		reportCols.add("Ставка");
 		reportCols.add("Начислено процентов");
 		reportCols.add("Основной долг");
-		if (loan != null) {
+		if (loan != null && loan.getInitialSum() != 0) {
 			List<LocalDate> dates = chbDateDivision.isSelected() ? loan.getDatesDivided() : loan.getDates();
 			Object[][] reportData = new Object[dates.size() / 2][6];
 			int i = 0;
@@ -244,12 +247,21 @@ public class CreditFrame extends JFrame {
 		loan.setCheckDay(Integer.parseInt(tfCheckDay.getText().isEmpty() ? String.valueOf(DEFAULT_CHECKDAY) : tfCheckDay.getText()));
 		loan.setStartDate(LocalDate.parse(tfStartDate.getText().isEmpty() ? LocalDate.now().toString() : tfStartDate.getText()));
 		loan.setEndDate(LocalDate.parse(tfEndDate.getText().isEmpty() ? LocalDate.now().plusYears(1).toString() : tfEndDate.getText()));
+		refreshLoanList();
+		prepareTables();
 	}
 	
-	private void updateLoans() {
-		updateLoanPropsFromUI();
-		int index = loans.indexOf(loan);
-		loans.set(index, loan);
+	private void updateUiFromLoan() {
+		if (loan == null) {
+			return;
+		}
+		tfBank.setText(loan.getBank());
+		tfCheckDay.setText(String.valueOf(loan.getCheckDay()));
+		tfStartDate.setText(String.valueOf(loan.getStartDate()));
+		tfEndDate.setText(String.valueOf(loan.getEndDate()));
+		tfNumber.setText(String.valueOf(loan.getNumber()));
+		//tfSum.setText(String.valueOf(loan.getInitialSum()));
+		prepareTables();
 	}
 	
 	/*
@@ -334,10 +346,21 @@ public class CreditFrame extends JFrame {
 		JLabel lblListTitle = new JLabel("Список кредитов");
 		panelListCmd.add(lblListTitle);
 		
-		listLoan = new JList();
+		listLoan = new JList<>();
 		
 		JScrollPane scrollPane5 = new JScrollPane(listLoan);
 		panelLoanList.add(scrollPane5, BorderLayout.CENTER);
+		
+		listLoan.addListSelectionListener(new ListSelectionListener() {
+
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+	              loan = listLoan.getSelectedValue();
+                  updateUiFromLoan();	          
+                  activateRateOperationButtons();
+			}
+			
+		});
 		
 		JPanel panelLoan = new JPanel();
 		panelEast.add(panelLoan);
@@ -356,7 +379,7 @@ public class CreditFrame extends JFrame {
 				updateLoanPropsFromUI();
 				loans.add(loan);
 				DataHelper.saveLoan(String.valueOf(loan.getBank() + loan.getId()), loan);
-				refreshCreditList();
+				refreshLoanList();
 			}
 		});
 		panel.add(btnAddLoan);
@@ -379,7 +402,7 @@ public class CreditFrame extends JFrame {
 		btnUpdateLoan = new JButton("Обновить");
 		btnUpdateLoan.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				updateLoans();
+				updateLoanPropsFromUI();
 			}
 		});
 		panel.add(btnUpdateLoan);
