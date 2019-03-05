@@ -1,6 +1,8 @@
 package ru.se.percent;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayList;
@@ -9,6 +11,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.key.LocalDateKeyDeserializer;
 
@@ -23,7 +26,6 @@ public class Loan implements Serializable {
 	private LocalDate startDate;
 	private LocalDate endDate;
 	private int checkDay;
-	//@JsonDeserialize()
 	private Map<LocalDate, Double> rates = new TreeMap<>();
 	
 	public Loan() {
@@ -37,10 +39,10 @@ public class Loan implements Serializable {
 		//rates.put(startDate, 10.0);
 	}
 	
-	public Loan(String bank, String number, List<Operation> operations, LocalDate startDate,
+	public Loan(UUID id, String bank, String number, List<Operation> operations, LocalDate startDate,
 			LocalDate endDate, int checkDay, Map<LocalDate, Double> rates) {
 		super();
-		this.id = UUID.randomUUID();
+		this.id = id;
 		this.bank = bank;
 		this.number = number;
 		this.operations = operations;
@@ -48,6 +50,15 @@ public class Loan implements Serializable {
 		this.endDate = endDate;
 		this.checkDay = checkDay;
 		this.rates = rates;
+	}
+	
+	public Loan(String bank, String number, List<Operation> operations, LocalDate startDate,
+			LocalDate endDate, int checkDay, Map<LocalDate, Double> rates) {
+		this(UUID.randomUUID(), bank, number, operations, startDate, endDate, checkDay, rates);
+	}
+	
+	public Loan(Loan loan) {
+		this(loan.id, loan.bank, loan.number, loan.operations, loan.startDate, loan.endDate, loan.checkDay, loan.rates);
 	}
 
 	public UUID getId() {
@@ -126,6 +137,7 @@ public class Loan implements Serializable {
 		this.rates.remove(date);
 	}
 	
+	@JsonIgnore
 	public double getInitialSum() {
 		return getCurrentDebt(startDate);
 	}
@@ -138,10 +150,18 @@ public class Loan implements Serializable {
 		while (!currentDate.equals(endDate.plusDays(1))) {
 			currentDebt = getCurrentDebt(currentDate);
 			currentRate = getCurrentRate(currentDate);
-			currentPercent += currentDebt * currentRate / currentDate.lengthOfYear();
+			currentPercent += round(currentDebt * currentRate / currentDate.lengthOfYear(), 2);
 			currentDate = currentDate.plusDays(1);
 		}
 		return currentPercent;
+	}
+	
+	public static double round(double value, int places) {
+	    if (places < 0) throw new IllegalArgumentException();
+
+	    BigDecimal bd = new BigDecimal(value);
+	    bd = bd.setScale(places, RoundingMode.HALF_UP);
+	    return bd.doubleValue();
 	}
 	
 	public double getCurrentDebt(LocalDate date) {
@@ -167,6 +187,7 @@ public class Loan implements Serializable {
 		return rates.get(currentDate) / 100;
 	}
 	
+	@JsonIgnore
 	public List<LocalDate> getDatesDivided() {
 		List<LocalDate> dates = new ArrayList<>();
 		LocalDate currentDate = startDate;
@@ -198,6 +219,7 @@ public class Loan implements Serializable {
 		return dates;
 	}
 	
+	@JsonIgnore
 	public List<LocalDate> getDates() {
 		List<LocalDate> dates = new ArrayList<>();
 		LocalDate currentDate = startDate;
@@ -243,11 +265,17 @@ public class Loan implements Serializable {
 		
 		return loan;
 	}
+	
+	@JsonIgnore
+	public String getFileName() {
+		return bank + "_" + number;
+	}
 
 	@Override
 	public String toString() {
-		return "Loan [bank=" + bank + ", number=" + number + ", operations=" + operations + ", startDate=" + startDate
-				+ ", endDate=" + endDate + ", checkDay=" + checkDay + ", rates=" + rates + "]";
+		//return "Loan [bank=" + bank + ", number=" + number + ", operations=" + operations + ", startDate=" + startDate
+		//		+ ", endDate=" + endDate + ", checkDay=" + checkDay + ", rates=" + rates + "]";
+		return bank + " договор №" + number + " от " + startDate;
 	}
 
 	@Override

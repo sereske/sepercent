@@ -39,7 +39,16 @@ public class DataHelper {
 		return instance;
 	}
 	
-	public static void saveLoanJackson(String fileName, Loan loan) {
+	public void delete(String fileName) {
+		File file = new File(DATA_FOLDER + "\\" + fileName);
+		if (file.delete()) {
+			System.out.println(fileName + " is deleted");
+		} else {
+			System.out.println(fileName + " does not exist");
+		}
+	}
+	
+	public void saveLoanJackson(String fileName, Loan loan) {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.registerModule(new JavaTimeModule());
 		try {
@@ -55,12 +64,9 @@ public class DataHelper {
 		}
 	}
 	
-	public static Loan loadLoanJackson(String fileName) {
+	public Loan loadLoanJackson(String fileName) {
 		Loan loan = null;
 		ObjectMapper mapper = new ObjectMapper();
-		//SimpleModule simpleModule = new SimpleModule();
-		//simpleModule.addKeyDeserializer(LocalDate.class, new LocalDateKeyDeserializer());
-		//mapper.registerModule(simpleModule);
 		mapper.registerModule(new JavaTimeModule());
 		try (FileInputStream fis = new FileInputStream(fileName)) {
 			loan = (Loan) mapper.readValue(fis, Loan.class);
@@ -77,11 +83,11 @@ public class DataHelper {
 		return null;
 	}
 	
-	public static void saveLoan(String fileName, Loan loan) {
+	public void saveLoan(String fileName, Loan loan) {
 		saveLoanJackson(fileName, loan);
 	}
 	
-	public static List<Loan> loadLoans() {
+	public List<Loan> loadLoans() {
 		List<Loan> loans = new ArrayList<>();
 		File folder = new File(DATA_FOLDER);
 		for (File file : folder.listFiles()) {
@@ -89,19 +95,6 @@ public class DataHelper {
 			loans.add(loan);
 		}
 		return loans;
-	}
-	
-	private static class LocalDateKeyDeserializer extends KeyDeserializer {
-
-		@Override
-		public Object deserializeKey(String key, DeserializationContext ctx) throws IOException {
-			 try {
-		            return LocalDate.parse(key, DateTimeFormatter.ISO_LOCAL_DATE);
-		        } catch (DateTimeException e) {
-		            return null;
-		        }
-		}
-		
 	}
 	
 }

@@ -1,6 +1,7 @@
 package ru.se.percent;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.EventQueue;
 
 import javax.swing.JFrame;
@@ -8,6 +9,7 @@ import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.JTree;
 import javax.swing.ListModel;
+import javax.swing.ListSelectionModel;
 import javax.swing.JList;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -32,14 +34,20 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.TreeMap;
 import java.util.Vector;
 import java.awt.event.ActionEvent;
 import javax.swing.SwingConstants;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 
@@ -52,6 +60,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
+import javax.swing.JFormattedTextField;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
 import javax.swing.border.EtchedBorder;
@@ -72,17 +81,16 @@ public class CreditFrame extends JFrame {
 	
 	private JTextField tfBank;
 	private JTextField tfNumber;
-	private JTextField tfStartDate;
-	private JTextField tfEndDate;
-	private JTextField tfSum;
+	private JFormattedTextField tfStartDate;
+	private JFormattedTextField tfEndDate;
 	private JTextField tfCheckDay;
 	
 	private JTable tableRate;
 	private JTable tableOperations;
 	private JTable tableReport;
 	
-	private JTextField tfRateDate;
-	private JTextField tfRateValue;
+	private JFormattedTextField tfRateDate;
+	private JFormattedTextField tfRateValue;
 	private JTextField tfOperationsDate;
 	private JTextField tfOperationsSum;
 	private JComboBox<ru.se.percent.Type> cmbOperation;
@@ -99,8 +107,7 @@ public class CreditFrame extends JFrame {
 	private List<Loan> loans;
 	private Loan loan;
 	
-	//private static final String DEFAULT_FILE_NAME = "data\\sepercent.txt";
-	//private static final String SETTINGS_FILE_NAME = "settings.properties";
+	private DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 	
 	private static final int DEFAULT_CHECKDAY = 28;
 	private JList<Loan> listLoan;
@@ -123,7 +130,7 @@ public class CreditFrame extends JFrame {
 	 */
 	public CreditFrame() {
 		helper = DataHelper.getInstance();
-		loans = DataHelper.loadLoans();
+		loans = helper.loadLoans();
 		loan = null;
 		createFrame();
 		
@@ -148,11 +155,16 @@ public class CreditFrame extends JFrame {
 			tfStartDate.setText(String.valueOf(loan.getStartDate()));
 			tfEndDate.setText(String.valueOf(loan.getEndDate()));
 			//tfSum.setText(String.valueOf(loan.getOperations().size() == 0 || loan.getOperations().get(0) == null ? 0 : loan.getOperations().get(0).getSum()));
+		} else {
+			tfBank.setText("");
+			tfCheckDay.setText("");
+			tfNumber.setText("");
+			tfStartDate.setText("");
+			tfEndDate.setText("");
 		}
 	}
 	
 	private void prepareTables() {
-		//refreshLoanList();
 		refreshRateTable();
 		refreshOperationsTable();
 		refreshReportTable();
@@ -171,9 +183,13 @@ public class CreditFrame extends JFrame {
 			List<String> rateCols = new ArrayList<>();
 			rateCols.add("Дата");
 			rateCols.add("Процентная ставка");
-			Object[][] rateData = new Object[loan.getRates().entrySet().size()][2];
-			int i = 0;
+			Map<LocalDate, Double> newRates = new TreeMap<>();
 			for (Map.Entry<LocalDate, Double> pair : loan.getRates().entrySet()) {
+				newRates.put(pair.getKey(), pair.getValue());
+			}
+			Object[][] rateData = new Object[newRates.entrySet().size()][2];
+			int i = 0;
+			for (Map.Entry<LocalDate, Double> pair : newRates.entrySet()) {
 				rateData[i][0] = pair.getKey();
 				rateData[i][1] = pair.getValue();
 				i++;
@@ -191,7 +207,9 @@ public class CreditFrame extends JFrame {
 			operationsCols.add("Сумма");
 			Object[][] operationsData = new Object[loan.getOperations().size()][3];
 			int i = 0;
-			for (Operation op : loan.getOperations()) {
+			List<Operation> operations = loan.getOperations();
+			Collections.sort(operations);
+			for (Operation op : operations) {
 				operationsData[i][0] = op.getDate();
 				operationsData[i][1] = op.getType();
 				operationsData[i][2] = op.getSum();
@@ -210,81 +228,51 @@ public class CreditFrame extends JFrame {
 		reportCols.add("Ставка");
 		reportCols.add("Начислено процентов");
 		reportCols.add("Основной долг");
-		if (loan != null && loan.getInitialSum() != 0) {
+		if (loan != null) { // && loan.getInitialSum() != 0) {
 			List<LocalDate> dates = chbDateDivision.isSelected() ? loan.getDatesDivided() : loan.getDates();
-			Object[][] reportData = new Object[dates.size() / 2][6];
-			int i = 0;
+			Object[][] reportData;
 			try {
-			for (int k = 0; k < dates.size() - 1; k += 2) {
-				LocalDate startDate = dates.get(k);
-				LocalDate endDate = dates.get(k + 1);
-				double percent = loan.getPercent(startDate, endDate);
-				double rate = loan.getCurrentRate(endDate);
-				long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
-				double debt = loan.getCurrentDebt(endDate);
-				reportData[i][0] = startDate;
-				reportData[i][1] = endDate;
-				reportData[i][2] = daysBetween;
-				reportData[i][3] = rate;
-				reportData[i][4] = percent;
-				reportData[i][5] = debt;
-				i++;
-			}
+				if (loan.getInitialSum() != 0) {
+					reportData = new Object[dates.size() / 2][6];
+					int i = 0;
+					for (int k = 0; k < dates.size() - 1; k += 2) {
+						LocalDate startDate = dates.get(k);
+						LocalDate endDate = dates.get(k + 1);
+						double percent = loan.getPercent(startDate, endDate);
+						double rate = loan.getCurrentRate(endDate);
+						long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
+						double debt = loan.getCurrentDebt(endDate);
+						reportData[i][0] = startDate;
+						reportData[i][1] = endDate;
+						reportData[i][2] = daysBetween;
+						reportData[i][3] = rate;
+						reportData[i][4] = percent;
+						reportData[i][5] = debt;
+						i++;
+					}
+				} else {
+					reportData = new Object[0][6];
+				}
+				TableModel reportModel = new DefaultTableModel(reportData, reportCols.toArray());
+				tableReport.setModel(reportModel);
+				
+				tableReport.getColumnModel().getColumn(4).setCellRenderer(new DecimalFormatRenderer());
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			TableModel reportModel = new DefaultTableModel(reportData, reportCols.toArray());
-			tableReport.setModel(reportModel);
 		}
 	}
 	
 	private void updateLoanPropsFromUI() {
-		if (loan == null) {
-			loan = new Loan();
-		}
 		loan.setBank(tfBank.getText());
 		loan.setNumber(tfNumber.getText());
-		loan.setCheckDay(Integer.parseInt(tfCheckDay.getText().isEmpty() ? String.valueOf(DEFAULT_CHECKDAY) : tfCheckDay.getText()));
+		
+		//if () {
+			loan.setCheckDay(Integer.parseInt(tfCheckDay.getText().isEmpty() ? String.valueOf(DEFAULT_CHECKDAY) : tfCheckDay.getText()));
+		//}
 		loan.setStartDate(LocalDate.parse(tfStartDate.getText().isEmpty() ? LocalDate.now().toString() : tfStartDate.getText()));
 		loan.setEndDate(LocalDate.parse(tfEndDate.getText().isEmpty() ? LocalDate.now().plusYears(1).toString() : tfEndDate.getText()));
-		refreshLoanList();
-		prepareTables();
 	}
-	
-	private void updateUiFromLoan() {
-		if (loan == null) {
-			return;
-		}
-		tfBank.setText(loan.getBank());
-		tfCheckDay.setText(String.valueOf(loan.getCheckDay()));
-		tfStartDate.setText(String.valueOf(loan.getStartDate()));
-		tfEndDate.setText(String.valueOf(loan.getEndDate()));
-		tfNumber.setText(String.valueOf(loan.getNumber()));
-		//tfSum.setText(String.valueOf(loan.getInitialSum()));
-		prepareTables();
-	}
-	
-	/*
-	private void loadSettings() {
-		Properties props = new Properties();
-		try {
-			props.load(new FileInputStream(SETTINGS_FILE_NAME));
-			currentFileName = props.getProperty("currentFileName");
-		} catch (IOException e) {
-			e.printStackTrace();
-			JOptionPane.showMessageDialog(CreditFrame.this, 
-					"Ошибка при чтении настроек", 
-					e.getMessage(), 
-					JOptionPane.ERROR_MESSAGE);
-			CreditFrame.this.setVisible(false);
-			CreditFrame.this.dispose();
-		} 
-	}
-	
-	private void saveSettings() {
-		
-	}
-	*/
 	
 	private void createFrame() {
 		setTitle("Кредит СЭ");
@@ -356,11 +344,13 @@ public class CreditFrame extends JFrame {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
 	              loan = listLoan.getSelectedValue();
-                  updateUiFromLoan();	          
+                  prepareProperties();	  
+                  prepareTables();
                   activateRateOperationButtons();
 			}
 			
 		});
+		listLoan.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		
 		JPanel panelLoan = new JPanel();
 		panelEast.add(panelLoan);
@@ -376,10 +366,12 @@ public class CreditFrame extends JFrame {
 		btnAddLoan = new JButton("+");
 		btnAddLoan.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				loan = new Loan();
 				updateLoanPropsFromUI();
 				loans.add(loan);
-				DataHelper.saveLoan(String.valueOf(loan.getBank() + loan.getId()), loan);
+				helper.saveLoan(loan.getFileName(), loan);
 				refreshLoanList();
+				prepareTables();
 			}
 		});
 		panel.add(btnAddLoan);
@@ -389,11 +381,11 @@ public class CreditFrame extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				if (loan != null) {
 					loans.remove(loan);
-					if (loans.size() == 0) {
-						
-					} else {
-						loan = loans.get(0);
-					}
+					helper.delete(loan.getFileName());
+					refreshLoanList();
+					loan = null;
+					prepareProperties();
+					prepareTables();
 				}
 			}
 		});
@@ -402,7 +394,27 @@ public class CreditFrame extends JFrame {
 		btnUpdateLoan = new JButton("Обновить");
 		btnUpdateLoan.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if (loan == null) {
+					return;
+				}
+				Loan oldLoan = new Loan(loan);
 				updateLoanPropsFromUI();
+				int indexOfLoan = 0;
+				for (int i = 0; i < loans.size(); i++) {
+					if (loans.get(i).getId() == loan.getId()) {
+						indexOfLoan = i;
+						break;
+					}
+				}
+				loans.set(indexOfLoan, loan);
+				if (loan.getFileName().equals(oldLoan.getFileName())) {
+					helper.saveLoan(loan.getFileName(), loan);
+				} else {
+					helper.delete(oldLoan.getFileName());
+					helper.saveLoan(loan.getFileName(), loan);
+				}
+				refreshLoanList();
+				prepareTables();
 			}
 		});
 		panel.add(btnUpdateLoan);
@@ -416,6 +428,7 @@ public class CreditFrame extends JFrame {
 		panelProps.add(lblBank);
 		
 		tfBank = new JTextField();
+		tfBank.setToolTipText("Банк");
 		panelProps.add(tfBank);
 		tfBank.setColumns(10);
 		
@@ -423,34 +436,31 @@ public class CreditFrame extends JFrame {
 		panelProps.add(lblNumber);
 		
 		tfNumber = new JTextField();
+		tfNumber.setToolTipText("№ договора");
 		panelProps.add(tfNumber);
 		tfNumber.setColumns(10);
 		
-		JLabel lblStartDate = new JLabel("Дата начала");
+		JLabel lblStartDate = new JLabel("Дата начала (в формате yyyy-MM-dd)");
 		panelProps.add(lblStartDate);
 		
-		tfStartDate = new JTextField();
+		tfStartDate = new JFormattedTextField(dateFormat);
+		tfStartDate.setToolTipText("Дата начала");
 		panelProps.add(tfStartDate);
 		tfStartDate.setColumns(10);
 		
-		JLabel lblEndDate = new JLabel("Дата окончания");
+		JLabel lblEndDate = new JLabel("Дата окончания (в формате yyyy-MM-dd)");
 		panelProps.add(lblEndDate);
 		
-		tfEndDate = new JTextField();
+		tfEndDate = new JFormattedTextField(dateFormat);
+		tfEndDate.setToolTipText("Дата окончания");
 		tfEndDate.setColumns(10);
 		panelProps.add(tfEndDate);
 		
-		JLabel lblSum = new JLabel("Сумма кредита");
-		panelProps.add(lblSum);
-		
-		tfSum = new JTextField();
-		tfSum.setColumns(10);
-		panelProps.add(tfSum);
-		
-		JLabel lblCheckDay = new JLabel("День расчета");
+		JLabel lblCheckDay = new JLabel("День расчета (от 1 до 31)");
 		panelProps.add(lblCheckDay);
 		
 		tfCheckDay = new JTextField();
+		tfCheckDay.setToolTipText("День расчета");
 		tfCheckDay.setColumns(10);
 		panelProps.add(tfCheckDay);
 		
@@ -480,14 +490,14 @@ public class CreditFrame extends JFrame {
 		JLabel lblRateDateTitle = new JLabel("Дата");
 		panelRateForm.add(lblRateDateTitle);
 		
-		tfRateDate = new JTextField();
+		tfRateDate = new JFormattedTextField(dateFormat);
 		panelRateForm.add(tfRateDate);
 		tfRateDate.setColumns(10);
 		
 		JLabel lblRateValueTitle = new JLabel("Процент");
 		panelRateForm.add(lblRateValueTitle);
 		
-		tfRateValue = new JTextField();
+		tfRateValue = new JFormattedTextField(dateFormat);
 		panelRateForm.add(tfRateValue);
 		tfRateValue.setColumns(10);
 		
@@ -509,6 +519,7 @@ public class CreditFrame extends JFrame {
 					model.removeRow(rowIndex);
 					loan.removeRate(date);
 				}
+				helper.saveLoan(loan.getFileName(), loan);
 				prepareTables();
 			}
 		});
@@ -521,6 +532,7 @@ public class CreditFrame extends JFrame {
 					model.addRow(new Object[] {rateDate, rateValue});
 					loan.addRate(LocalDate.parse(rateDate), Double.parseDouble(rateValue));
 					prepareTables();
+					helper.saveLoan(loan.getFileName(), loan);
 				}
 			}
 		});
@@ -579,6 +591,7 @@ public class CreditFrame extends JFrame {
 				model.addRow(new Object[] {date, type, sum});
 				Operation op = new Operation(LocalDate.parse(date), Double.parseDouble(sum), type);
 				loan.addOperation(op);
+				helper.saveLoan(loan.getFileName(), loan);
 				logOperations();
 				prepareTables();
 			}
@@ -600,6 +613,7 @@ public class CreditFrame extends JFrame {
 					model.removeRow(rowIndex);
 				}
 				logOperations();
+				helper.saveLoan(loan.getFileName(), loan);
 				prepareTables();
 			}
 		});
@@ -667,32 +681,15 @@ public class CreditFrame extends JFrame {
 		}
 	}
 	
-	private void loadLoan(String fileName) {
-		loan = new Loan();
-		try (FileInputStream fis
-			      = new FileInputStream(fileName);
-			    ObjectInputStream ois = new ObjectInputStream(fis)) {
-			loan = (Loan) ois.readObject();
-			System.out.println(loan);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			JOptionPane.showMessageDialog(CreditFrame.this, 
-					"Ошибка при чтении - FileNotFoundException", 
-					e.getMessage(), 
-					JOptionPane.ERROR_MESSAGE);
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-			JOptionPane.showMessageDialog(CreditFrame.this, 
-					"Ошибка при чтении - IOException", 
-					e.getMessage(), 
-					JOptionPane.ERROR_MESSAGE);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-			JOptionPane.showMessageDialog(CreditFrame.this, 
-					"Ошибка при чтении - ClassNotFoundException", 
-					e.getMessage(), 
-					JOptionPane.ERROR_MESSAGE);
+	private static class DecimalFormatRenderer extends DefaultTableCellRenderer {
+		private static final DecimalFormat formatter = new DecimalFormat( "#.00" );
+		 
+		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+	        // First format the cell value as required
+			value = formatter.format((Number)value);
+	 
+	        // And pass it on to parent class
+			return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column );
 		}
 	}
 	

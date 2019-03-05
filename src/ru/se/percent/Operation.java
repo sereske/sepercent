@@ -3,7 +3,7 @@ package ru.se.percent;
 import java.io.Serializable;
 import java.time.LocalDate;
 
-public class Operation implements Serializable {
+public class Operation implements Serializable, Comparable<Operation> {
 	
 	private static final long serialVersionUID = 1L;
 	
@@ -58,6 +58,11 @@ public class Operation implements Serializable {
 		if (obj == this) return true;
 		Operation other = (Operation) obj;
 		return this.date.equals(other.date) && this.type == other.type;
+	}
+
+	@Override
+	public int compareTo(Operation o) {
+		return date.compareTo(o.date);
 	}
 
 	@Override
