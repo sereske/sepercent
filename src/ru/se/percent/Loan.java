@@ -12,8 +12,6 @@ import java.util.TreeMap;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.datatype.jsr310.deser.key.LocalDateKeyDeserializer;
 
 public class Loan implements Serializable {
 	
@@ -176,6 +174,20 @@ public class Loan implements Serializable {
 			}
 		}
 		return currentDebt;
+	}
+	
+	public double getTotalPercent(LocalDate date) {
+		double totalPercent = 0.0;
+		for (Operation op : operations) {
+			if (op.getDate().isEqual(date) || op.getDate().isBefore(date)) {
+				if (op.getType() == Type.PERCENT_PAID) {
+					totalPercent -= op.getSum();
+				} else if (op.getType() == Type.PERCENT_RECEIVED) {
+					totalPercent += op.getSum();
+				}
+			}
+		}
+		return totalPercent;
 	}
 	
 	public double getCurrentRate(LocalDate date) {

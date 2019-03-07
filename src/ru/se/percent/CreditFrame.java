@@ -3,79 +3,48 @@ package ru.se.percent;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.EventQueue;
-
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.border.EmptyBorder;
-import javax.swing.JTree;
-import javax.swing.ListModel;
-import javax.swing.ListSelectionModel;
-import javax.swing.JList;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.JLabel;
-import javax.swing.BoxLayout;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
-import javax.swing.JScrollPane;
-import java.awt.GridBagLayout;
-import java.awt.GridBagConstraints;
-import java.awt.Insets;
-import javax.swing.JButton;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.TreeMap;
-import java.util.Vector;
-import java.awt.event.ActionEvent;
+
+import javax.swing.BoxLayout;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListModel;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JFormattedTextField;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.EtchedBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import javax.swing.ImageIcon;
-import javax.swing.JComboBox;
-import javax.swing.JFileChooser;
-import javax.swing.JFormattedTextField;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.DefaultListModel;
-import javax.swing.border.EtchedBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.event.ListDataListener;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.JCheckBox;
-import javax.swing.JMenuBar;
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-
 public class CreditFrame extends JFrame {
+
+	private static final long serialVersionUID = 1L;
 
 	private JPanel contentPane;
 	
@@ -103,7 +72,8 @@ public class CreditFrame extends JFrame {
 	private JButton btnDeleteLoan;
 	private JButton btnAddLoan;
 
-	private DataHelper helper;
+	private DataHelper dataHelper;
+	private ExcelHelper excelHelper;
 	private List<Loan> loans;
 	private Loan loan;
 	
@@ -129,8 +99,9 @@ public class CreditFrame extends JFrame {
 	 * Create the frame.
 	 */
 	public CreditFrame() {
-		helper = DataHelper.getInstance();
-		loans = helper.loadLoans();
+		dataHelper = DataHelper.getInstance();
+		excelHelper = ExcelHelper.getInstance();
+		loans = dataHelper.loadLoans();
 		loan = null;
 		createFrame();
 		
@@ -179,6 +150,7 @@ public class CreditFrame extends JFrame {
 	}
 	
 	private void refreshRateTable() {
+		/*
 		if (loan != null) {
 			List<String> rateCols = new ArrayList<>();
 			rateCols.add("Дата");
@@ -197,9 +169,15 @@ public class CreditFrame extends JFrame {
 			TableModel rateModel = new DefaultTableModel(rateData, rateCols.toArray());
 			tableRate.setModel(rateModel);
 		}
+		*/
+		Object[][] rateData = TableHelper.getRateTableData(loan);
+		Object[] rateCols = TableHelper.getRateTableCols();
+		TableModel rateModel = new DefaultTableModel(rateData, rateCols);
+		tableRate.setModel(rateModel);
 	}
 	
 	private void refreshOperationsTable() {
+		/*
 		if (loan != null) {
 			List<String> operationsCols = new ArrayList<>();
 			operationsCols.add("Дата");
@@ -218,49 +196,21 @@ public class CreditFrame extends JFrame {
 			TableModel operationsModel = new DefaultTableModel(operationsData, operationsCols.toArray());
 			tableOperations.setModel(operationsModel);
 		}
+		*/
+		Object[][] operationsData = TableHelper.getOperationsTableData(loan);
+		Object[] operationsCols = TableHelper.getOperationsTableCols();
+		TableModel operationsModel = new DefaultTableModel(operationsData, operationsCols);
+		tableOperations.setModel(operationsModel);
 	}
 	
 	private void refreshReportTable() {
-		List<String> reportCols = new ArrayList<>();
-		reportCols.add("Начало периода");
-		reportCols.add("Конец периода");
-		reportCols.add("Кол-во дней");
-		reportCols.add("Ставка");
-		reportCols.add("Начислено процентов");
-		reportCols.add("Основной долг");
-		if (loan != null) { // && loan.getInitialSum() != 0) {
-			List<LocalDate> dates = chbDateDivision.isSelected() ? loan.getDatesDivided() : loan.getDates();
-			Object[][] reportData;
-			try {
-				if (loan.getInitialSum() != 0) {
-					reportData = new Object[dates.size() / 2][6];
-					int i = 0;
-					for (int k = 0; k < dates.size() - 1; k += 2) {
-						LocalDate startDate = dates.get(k);
-						LocalDate endDate = dates.get(k + 1);
-						double percent = loan.getPercent(startDate, endDate);
-						double rate = loan.getCurrentRate(endDate);
-						long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
-						double debt = loan.getCurrentDebt(endDate);
-						reportData[i][0] = startDate;
-						reportData[i][1] = endDate;
-						reportData[i][2] = daysBetween;
-						reportData[i][3] = rate;
-						reportData[i][4] = percent;
-						reportData[i][5] = debt;
-						i++;
-					}
-				} else {
-					reportData = new Object[0][6];
-				}
-				TableModel reportModel = new DefaultTableModel(reportData, reportCols.toArray());
-				tableReport.setModel(reportModel);
-				
-				tableReport.getColumnModel().getColumn(4).setCellRenderer(new DecimalFormatRenderer());
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
+		Object[][] reportData = TableHelper.getReportTableData(loan, chbDateDivision.isSelected());
+		Object[] reportCols = TableHelper.getReportTableCols();
+		TableModel reportModel = new DefaultTableModel(reportData, reportCols);
+		tableReport.setModel(reportModel);
+		tableReport.getColumnModel().getColumn(4).setCellRenderer(new DecimalFormatRenderer());
+		tableReport.getColumnModel().getColumn(5).setCellRenderer(new DecimalFormatRenderer());
+		tableReport.getColumnModel().getColumn(6).setCellRenderer(new DecimalFormatRenderer());
 	}
 	
 	private void updateLoanPropsFromUI() {
@@ -364,12 +314,13 @@ public class CreditFrame extends JFrame {
 		lblCreditLabel.setHorizontalAlignment(SwingConstants.CENTER);
 		
 		btnAddLoan = new JButton("+");
+		btnAddLoan.setToolTipText("Добавить кредит");
 		btnAddLoan.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				loan = new Loan();
 				updateLoanPropsFromUI();
 				loans.add(loan);
-				helper.saveLoan(loan.getFileName(), loan);
+				dataHelper.saveLoan(loan.getFileName(), loan);
 				refreshLoanList();
 				prepareTables();
 			}
@@ -377,11 +328,12 @@ public class CreditFrame extends JFrame {
 		panel.add(btnAddLoan);
 		
 		btnDeleteLoan = new JButton("x");
+		btnDeleteLoan.setToolTipText("Удалить кредит");
 		btnDeleteLoan.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (loan != null) {
 					loans.remove(loan);
-					helper.delete(loan.getFileName());
+					dataHelper.delete(loan.getFileName());
 					refreshLoanList();
 					loan = null;
 					prepareProperties();
@@ -392,6 +344,7 @@ public class CreditFrame extends JFrame {
 		panel.add(btnDeleteLoan);
 		
 		btnUpdateLoan = new JButton("Обновить");
+		btnUpdateLoan.setToolTipText("Обновить список кредитов");
 		btnUpdateLoan.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (loan == null) {
@@ -408,10 +361,10 @@ public class CreditFrame extends JFrame {
 				}
 				loans.set(indexOfLoan, loan);
 				if (loan.getFileName().equals(oldLoan.getFileName())) {
-					helper.saveLoan(loan.getFileName(), loan);
+					dataHelper.saveLoan(loan.getFileName(), loan);
 				} else {
-					helper.delete(oldLoan.getFileName());
-					helper.saveLoan(loan.getFileName(), loan);
+					dataHelper.delete(oldLoan.getFileName());
+					dataHelper.saveLoan(loan.getFileName(), loan);
 				}
 				refreshLoanList();
 				prepareTables();
@@ -491,6 +444,7 @@ public class CreditFrame extends JFrame {
 		panelRateForm.add(lblRateDateTitle);
 		
 		tfRateDate = new JFormattedTextField(dateFormat);
+		tfRateDate.setToolTipText("Дата изменения процента");
 		panelRateForm.add(tfRateDate);
 		tfRateDate.setColumns(10);
 		
@@ -498,14 +452,17 @@ public class CreditFrame extends JFrame {
 		panelRateForm.add(lblRateValueTitle);
 		
 		tfRateValue = new JFormattedTextField(dateFormat);
+		tfRateValue.setToolTipText("Процент (от 0 до 100)");
 		panelRateForm.add(tfRateValue);
 		tfRateValue.setColumns(10);
 		
 		btnAddRate = new JButton();
+		btnAddRate.setToolTipText("Добавить процент");
 		btnAddRate.setText("+");
 		panelRateForm.add(btnAddRate);
 		
 		btnDeleteRate = new JButton();
+		btnDeleteRate.setToolTipText("Удалить процент");
 		btnDeleteRate.setText("x");
 		panelRateForm.add(btnDeleteRate);
 		btnDeleteRate.addActionListener(new ActionListener() {
@@ -519,7 +476,7 @@ public class CreditFrame extends JFrame {
 					model.removeRow(rowIndex);
 					loan.removeRate(date);
 				}
-				helper.saveLoan(loan.getFileName(), loan);
+				dataHelper.saveLoan(loan.getFileName(), loan);
 				prepareTables();
 			}
 		});
@@ -532,7 +489,7 @@ public class CreditFrame extends JFrame {
 					model.addRow(new Object[] {rateDate, rateValue});
 					loan.addRate(LocalDate.parse(rateDate), Double.parseDouble(rateValue));
 					prepareTables();
-					helper.saveLoan(loan.getFileName(), loan);
+					dataHelper.saveLoan(loan.getFileName(), loan);
 				}
 			}
 		});
@@ -563,6 +520,7 @@ public class CreditFrame extends JFrame {
 		panelOperationsForm.add(lblOperationsDate);
 		
 		tfOperationsDate = new JTextField();
+		tfOperationsDate.setToolTipText("Дата операции");
 		panelOperationsForm.add(tfOperationsDate);
 		tfOperationsDate.setColumns(10);
 		
@@ -570,6 +528,7 @@ public class CreditFrame extends JFrame {
 		panelOperationsForm.add(lblOperation);
 		
 		cmbOperation = new JComboBox<ru.se.percent.Type>();
+		cmbOperation.setToolTipText("Операция");
 		panelOperationsForm.add(cmbOperation);
 		cmbOperation.setModel(new DefaultComboBoxModel<>(ru.se.percent.Type.values()));
 		
@@ -577,10 +536,12 @@ public class CreditFrame extends JFrame {
 		panelOperationsForm.add(lblOperationsFormSum);
 		
 		tfOperationsSum = new JTextField();
+		tfOperationsSum.setToolTipText("Сумма операции");
 		panelOperationsForm.add(tfOperationsSum);
 		tfOperationsSum.setColumns(10);
 		
 		btnAddOperation = new JButton("+");
+		btnAddOperation.setToolTipText("Добавить операцию");
 		panelOperationsForm.add(btnAddOperation);
 		btnAddOperation.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -591,7 +552,7 @@ public class CreditFrame extends JFrame {
 				model.addRow(new Object[] {date, type, sum});
 				Operation op = new Operation(LocalDate.parse(date), Double.parseDouble(sum), type);
 				loan.addOperation(op);
-				helper.saveLoan(loan.getFileName(), loan);
+				dataHelper.saveLoan(loan.getFileName(), loan);
 				logOperations();
 				prepareTables();
 			}
@@ -599,6 +560,7 @@ public class CreditFrame extends JFrame {
 		btnAddOperation.setIcon(null);
 		
 		btnDeleteOperation = new JButton("x");
+		btnDeleteOperation.setToolTipText("Удалить операцию");
 		panelOperationsForm.add(btnDeleteOperation);
 		btnDeleteOperation.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -613,7 +575,7 @@ public class CreditFrame extends JFrame {
 					model.removeRow(rowIndex);
 				}
 				logOperations();
-				helper.saveLoan(loan.getFileName(), loan);
+				dataHelper.saveLoan(loan.getFileName(), loan);
 				prepareTables();
 			}
 		});
@@ -651,6 +613,15 @@ public class CreditFrame extends JFrame {
 		panelReportCmd.add(btnRefresh);
 		btnRefresh.setToolTipText("Обновить отчет по процентам");
 		btnRefresh.setIcon(new ImageIcon(CreditFrame.class.getResource("/images/icons8-available-updates-40.png")));
+		
+		JButton btnExcel = new JButton("Excel");
+		btnExcel.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				excelHelper.exportFile(loan, chbDateDivision.isSelected());
+			}
+		});
+		btnExcel.setToolTipText("Выгрузить в Excel");
+		panelReportCmd.add(btnExcel);
 		btnRefresh.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				refreshReportTable();
@@ -682,6 +653,9 @@ public class CreditFrame extends JFrame {
 	}
 	
 	private static class DecimalFormatRenderer extends DefaultTableCellRenderer {
+
+		private static final long serialVersionUID = 1L;
+		
 		private static final DecimalFormat formatter = new DecimalFormat( "#.00" );
 		 
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
