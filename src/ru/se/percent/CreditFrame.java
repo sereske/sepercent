@@ -9,6 +9,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.List;
@@ -41,6 +42,7 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
+import javax.swing.text.NumberFormatter;
 
 public class CreditFrame extends JFrame {
 
@@ -59,8 +61,10 @@ public class CreditFrame extends JFrame {
 	private JTable tableReport;
 	
 	private JFormattedTextField tfRateDate;
-	private JFormattedTextField tfRateValue;
-	private JTextField tfOperationsDate;
+	//private JFormattedTextField tfRateValue;
+	private JTextField tfRateValue;
+	private JFormattedTextField tfOperationsDate;
+	//private JFormattedTextField tfOperationsSum;
 	private JTextField tfOperationsSum;
 	private JComboBox<ru.se.percent.Type> cmbOperation;
 	private JCheckBox chbDateDivision;
@@ -78,6 +82,7 @@ public class CreditFrame extends JFrame {
 	private Loan loan;
 	
 	private DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+	//private NumberFormat numberFormat = NumberFormat.getInstance();
 	
 	private static final int DEFAULT_CHECKDAY = 28;
 	private JList<Loan> listLoan;
@@ -451,7 +456,14 @@ public class CreditFrame extends JFrame {
 		JLabel lblRateValueTitle = new JLabel("Процент");
 		panelRateForm.add(lblRateValueTitle);
 		
-		tfRateValue = new JFormattedTextField(dateFormat);
+		//NumberFormatter rateFormatter = new NumberFormatter(numberFormat);
+		//rateFormatter.setValueClass(Double.class);
+		//rateFormatter.setMinimum(0);
+		//rateFormatter.setMaximum(100.0);
+		//rateFormatter.setAllowsInvalid(false);
+		//rateFormatter.setCommitsOnValidEdit(true);
+		//tfRateValue = new JFormattedTextField(rateFormatter);
+		tfRateValue = new JTextField();
 		tfRateValue.setToolTipText("Процент (от 0 до 100)");
 		panelRateForm.add(tfRateValue);
 		tfRateValue.setColumns(10);
@@ -485,11 +497,13 @@ public class CreditFrame extends JFrame {
 				String rateValue = tfRateValue.getText();
 				String rateDate = tfRateDate.getText();
 				if (rateDate != null && !rateDate.isEmpty() && rateValue != null && !rateValue.isEmpty()) {
-					DefaultTableModel model = (DefaultTableModel) tableRate.getModel();
-					model.addRow(new Object[] {rateDate, rateValue});
-					loan.addRate(LocalDate.parse(rateDate), Double.parseDouble(rateValue));
-					prepareTables();
-					dataHelper.saveLoan(loan.getFileName(), loan);
+					if (rateValue.matches("^[0-9]*\\.?[0-9]{0,2}$")) {
+						DefaultTableModel model = (DefaultTableModel) tableRate.getModel();
+						model.addRow(new Object[] {rateDate, rateValue});
+						loan.addRate(LocalDate.parse(rateDate), Double.parseDouble(rateValue));
+						prepareTables();
+						dataHelper.saveLoan(loan.getFileName(), loan);
+					}
 				}
 			}
 		});
@@ -519,7 +533,7 @@ public class CreditFrame extends JFrame {
 		JLabel lblOperationsDate = new JLabel("Дата");
 		panelOperationsForm.add(lblOperationsDate);
 		
-		tfOperationsDate = new JTextField();
+		tfOperationsDate = new JFormattedTextField(dateFormat);
 		tfOperationsDate.setToolTipText("Дата операции");
 		panelOperationsForm.add(tfOperationsDate);
 		tfOperationsDate.setColumns(10);
@@ -535,6 +549,11 @@ public class CreditFrame extends JFrame {
 		JLabel lblOperationsFormSum = new JLabel("Сумма");
 		panelOperationsForm.add(lblOperationsFormSum);
 		
+		//NumberFormatter operationSumFormatter = new NumberFormatter(numberFormat);
+		//operationSumFormatter.setValueClass(Double.class);
+		//operationSumFormatter.setMinimum(0.0);
+		//operationSumFormatter.setAllowsInvalid(false);
+		//operationSumFormatter.setCommitsOnValidEdit(true);
 		tfOperationsSum = new JTextField();
 		tfOperationsSum.setToolTipText("Сумма операции");
 		panelOperationsForm.add(tfOperationsSum);
@@ -548,13 +567,17 @@ public class CreditFrame extends JFrame {
 				String date = tfOperationsDate.getText();
 				ru.se.percent.Type type = (ru.se.percent.Type) cmbOperation.getSelectedItem();
 				String sum = tfOperationsSum.getText();
-				DefaultTableModel model = (DefaultTableModel) tableOperations.getModel();
-				model.addRow(new Object[] {date, type, sum});
-				Operation op = new Operation(LocalDate.parse(date), Double.parseDouble(sum), type);
-				loan.addOperation(op);
-				dataHelper.saveLoan(loan.getFileName(), loan);
-				logOperations();
-				prepareTables();
+				if (date!= null && !date.isEmpty() && sum != null && !sum.isEmpty()) {
+					if (sum.matches("^[0-9]+\\.?[0-9]*$")) {
+						DefaultTableModel model = (DefaultTableModel) tableOperations.getModel();
+						model.addRow(new Object[] {date, type, sum});
+						Operation op = new Operation(LocalDate.parse(date), Double.parseDouble(sum), type);
+						loan.addOperation(op);
+						dataHelper.saveLoan(loan.getFileName(), loan);
+						logOperations();
+						prepareTables();
+					}
+				}
 			}
 		});
 		btnAddOperation.setIcon(null);
