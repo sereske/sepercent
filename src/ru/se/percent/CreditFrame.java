@@ -37,12 +37,15 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.EtchedBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 import javax.swing.text.NumberFormatter;
+import javax.swing.JTabbedPane;
 
 public class CreditFrame extends JFrame {
 
@@ -85,7 +88,13 @@ public class CreditFrame extends JFrame {
 	//private NumberFormat numberFormat = NumberFormat.getInstance();
 	
 	private static final int DEFAULT_CHECKDAY = 28;
+	private static final int MIN_YEAR = 2000;
+	private static final int MAX_YEAR = 2050;
+	
 	private JList<Loan> listLoan;
+	private JTable tableTotalPercentPaid;
+	private JTable tableTotalPercentReceived;
+	private JComboBox<Integer> cmbYear;
 	
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
@@ -218,6 +227,13 @@ public class CreditFrame extends JFrame {
 		tableReport.getColumnModel().getColumn(6).setCellRenderer(new DecimalFormatRenderer());
 	}
 	
+	private void refreshPercentTables() {
+		Object[][] percentData = TableHelper.getPercentTableData(loans, new Integer(cmbYear.getSelectedItem().toString()));
+		Object[] percentCols = TableHelper.getPercentTableCols();
+		TableModel percentModel = new DefaultTableModel(percentData, percentCols);
+		tableTotalPercentPaid.setModel(percentModel);
+	}
+	
 	private void updateLoanPropsFromUI() {
 		loan.setBank(tfBank.getText());
 		loan.setNumber(tfNumber.getText());
@@ -274,9 +290,26 @@ public class CreditFrame extends JFrame {
 		setContentPane(contentPane);
 		contentPane.setLayout(new BorderLayout(0, 0));
 		
+		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+		tabbedPane.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				if (tabbedPane.getSelectedIndex() == 1) {
+					refreshPercentTables();
+				}
+			}
+			
+		});
+		contentPane.add(tabbedPane, BorderLayout.CENTER);
+		
+		JPanel loanTab = new JPanel();
+		tabbedPane.addTab("Кредиты", null, loanTab, null);
+		loanTab.setLayout(new BorderLayout(0, 0));
+		
 		
 		JPanel panelEast = new JPanel();
-		contentPane.add(panelEast, BorderLayout.EAST);
+		loanTab.add(panelEast, BorderLayout.EAST);
 		panelEast.setLayout(new BoxLayout(panelEast, BoxLayout.Y_AXIS));
 		
 		JPanel panelLoanList = new JPanel();
@@ -585,35 +618,18 @@ public class CreditFrame extends JFrame {
 		btnDeleteOperation = new JButton("x");
 		btnDeleteOperation.setToolTipText("Удалить операцию");
 		panelOperationsForm.add(btnDeleteOperation);
-		btnDeleteOperation.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				DefaultTableModel model = (DefaultTableModel) tableOperations.getModel();
-				int[] selectedRows = tableOperations.getSelectedRows();
-				for (Integer rowIndex : selectedRows) {
-					String strDate = model.getValueAt(rowIndex, 0).toString();
-					double sum = Double.parseDouble(model.getValueAt(rowIndex, 2).toString());
-					ru.se.percent.Type type = (ru.se.percent.Type) model.getValueAt(rowIndex, 1);
-					Operation op = new Operation(LocalDate.parse(strDate), sum, type);
-					loan.removeOperation(op);
-					model.removeRow(rowIndex);
-				}
-				logOperations();
-				dataHelper.saveLoan(loan.getFileName(), loan);
-				prepareTables();
-			}
-		});
 		
 		JPanel panelStatus = new JPanel();
+		loanTab.add(panelStatus, BorderLayout.SOUTH);
 		FlowLayout flowLayout_1 = (FlowLayout) panelStatus.getLayout();
 		flowLayout_1.setAlignment(FlowLayout.LEADING);
-		contentPane.add(panelStatus, BorderLayout.SOUTH);
 		
 		JLabel lblStatus = new JLabel("Статус:");
 		panelStatus.add(lblStatus);
 		
 		JPanel panelReport = new JPanel();
+		loanTab.add(panelReport, BorderLayout.CENTER);
 		panelReport.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
-		contentPane.add(panelReport, BorderLayout.CENTER);
 		panelReport.setLayout(new BorderLayout(0, 0));
 		
 		JPanel panelReportCmd = new JPanel();
@@ -657,6 +673,69 @@ public class CreditFrame extends JFrame {
 		
 		JScrollPane scrollPane4 = new JScrollPane(tableReport);
 		panelReport.add(scrollPane4, BorderLayout.CENTER);
+		
+		JPanel reportTab = new JPanel();
+		tabbedPane.addTab("Общий отчет", null, reportTab, null);
+		reportTab.setLayout(new BoxLayout(reportTab, BoxLayout.Y_AXIS));
+		
+		tableTotalPercentPaid = new JTable();
+		tableTotalPercentPaid.setFillsViewportHeight(true);
+		
+		//reportTab.add(tableTotalPercentPaid);
+		
+		tableTotalPercentReceived = new JTable();
+		tableTotalPercentReceived.setFillsViewportHeight(true);
+		
+		JPanel panel_1 = new JPanel();
+		reportTab.add(panel_1);
+		
+		JLabel lblNewLabel = new JLabel("Начислено процентов АО Сахаэнерго за");
+		panel_1.add(lblNewLabel);
+		
+		cmbYear = new JComboBox<>();
+		cmbYear.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				refreshPercentTables();
+			}
+		});
+		cmbYear.setToolTipText("Год");
+		Integer[] years = new Integer[MAX_YEAR - MIN_YEAR + 1];
+		for (int i = MIN_YEAR; i <= MAX_YEAR; i++) {
+			years[i - MIN_YEAR] = i;
+		}
+		cmbYear.setModel(new DefaultComboBoxModel<Integer>(years));
+		int currentYear = LocalDate.now().getYear();
+		int currentYearIndex = currentYear - MIN_YEAR;
+		cmbYear.setSelectedIndex(currentYearIndex);
+		panel_1.add(cmbYear);
+		
+		JLabel lblNewLabel_1 = new JLabel("год");
+		panel_1.add(lblNewLabel_1);
+		//reportTab.add(tableTotalPercentReceived);
+		
+		JScrollPane scrollPane6 = new JScrollPane(tableTotalPercentPaid);
+		reportTab.add(scrollPane6);
+		
+		JScrollPane scrollPane7 = new JScrollPane(tableTotalPercentReceived);
+		reportTab.add(scrollPane7);
+		
+		btnDeleteOperation.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				DefaultTableModel model = (DefaultTableModel) tableOperations.getModel();
+				int[] selectedRows = tableOperations.getSelectedRows();
+				for (Integer rowIndex : selectedRows) {
+					String strDate = model.getValueAt(rowIndex, 0).toString();
+					double sum = Double.parseDouble(model.getValueAt(rowIndex, 2).toString());
+					ru.se.percent.Type type = (ru.se.percent.Type) model.getValueAt(rowIndex, 1);
+					Operation op = new Operation(LocalDate.parse(strDate), sum, type);
+					loan.removeOperation(op);
+					model.removeRow(rowIndex);
+				}
+				logOperations();
+				dataHelper.saveLoan(loan.getFileName(), loan);
+				prepareTables();
+			}
+		});
 		
 		activateRateOperationButtons();
 	}

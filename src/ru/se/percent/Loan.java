@@ -193,6 +193,9 @@ public class Loan implements Serializable {
 	public double getCurrentRate(LocalDate date) {
 		LocalDate currentDate = date;
 		//while (!rates.isEmpty() && !rates.containsKey(currentDate)) {
+		if (date.isBefore(startDate) || date.isAfter(endDate)) {
+			return 0.0;
+		}
 		while (!rates.isEmpty() && !rates.containsKey(currentDate)) {
 			currentDate = currentDate.minusDays(1);
 		}

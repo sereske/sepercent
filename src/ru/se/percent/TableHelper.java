@@ -1,6 +1,7 @@
 package ru.se.percent;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -124,5 +125,109 @@ public class TableHelper {
 			propertiesData[4][1] = loan.getCheckDay();
 		}
 		return propertiesData;
+	}
+	
+	public static Object[][] getPercentTableData(List<Loan> loans, int year) {
+		Object[][] percentData = new Object[loans.size() + 1][19];
+		for (int i = 0; i < loans.size(); i++) {
+			Loan loan = loans.get(i);
+			percentData[i][0] = loan.getBank();
+			percentData[i][1] = loan.getNumber();
+			for (int j = 2; j <= 18; j++) {
+				LocalDate startDate;
+				LocalDate endDate;
+				/*
+				 * j = 2 - Январь 1
+				 * j = 3 - Февраль 2
+				 * j = 4 - Март 3
+				 * j = 5 - 1 квартал 
+				 * j = 6 - Апрель 4
+				 * j = 7 - Май 5
+				 * j = 8 - Июнь 6
+				 * j = 9 - 2 квартал
+				 * j = 10 - Июль 7
+				 * j = 11 - Август 8
+				 * j = 12 - Сентябрь 9
+				 * j = 13 - 3 квартал
+				 * j = 14 - Октябрь 10
+				 * j = 15 - Ноябрь 11
+				 * j = 16 - Декабрь 12
+				 * j = 17 - 4 квартал
+				 * j = 18 - Год
+				 */
+				if (j <= 4) {
+					Month month = Month.of(j - 1);
+					startDate = LocalDate.of(year, month, 1);
+					int lastDay = startDate.lengthOfMonth();
+					endDate = LocalDate.of(year, month, lastDay);
+				} else if (j == 5) {
+					startDate = LocalDate.of(year, 1, 1);
+					endDate = LocalDate.of(year, 3, 31);
+				} else if (j <= 8) {
+					Month month = Month.of(j - 2);
+					startDate = LocalDate.of(year, month, 1);
+					int lastDay = startDate.lengthOfMonth();
+					endDate = LocalDate.of(year, month, lastDay);
+				} else if (j == 9) {
+					startDate = LocalDate.of(year, 4, 1);
+					endDate = LocalDate.of(year, 6, 30);
+				} else if (j <= 12) {
+					Month month = Month.of(j - 3);
+					startDate = LocalDate.of(year, month, 1);
+					int lastDay = startDate.lengthOfMonth();
+					endDate = LocalDate.of(year, month, lastDay);
+				} else if (j == 13) {
+					startDate = LocalDate.of(year, 7, 1);
+					endDate = LocalDate.of(year, 9, 30);
+				} else if (j <= 16) {
+					Month month = Month.of(j - 4);
+					startDate = LocalDate.of(year, month, 1);
+					int lastDay = startDate.lengthOfMonth();
+					endDate = LocalDate.of(year, month, lastDay);
+				} else if (j == 17) {
+					startDate = LocalDate.of(year, 10, 1);
+					endDate = LocalDate.of(year, 12, 31);
+				} else {
+					startDate = LocalDate.of(year,  1,  1);
+					endDate = LocalDate.of(year, 12, 31);
+				}
+				percentData[i][j] = loan.getPercent(startDate, endDate);
+			}
+		}
+		int totalRow = loans.size();
+		percentData[totalRow][0] = "Итого";
+		percentData[totalRow][1] = "";
+		for (int j = 2; j <= 18; j++) {
+			double total = 0.0;
+			for (int i = 0; i < loans.size(); i++) {
+				total += Double.parseDouble(percentData[i][j].toString());
+			}
+			percentData[totalRow][j] = total;
+		}
+		return percentData;
+	}
+	
+	public static Object[] getPercentTableCols() {
+		List<String> percentCols = new ArrayList<>();
+		percentCols.add("Банк");
+		percentCols.add("Договор");
+		percentCols.add("Январь");
+		percentCols.add("Февраль");
+		percentCols.add("Март");
+		percentCols.add("1 Квартал");
+		percentCols.add("Апрель");
+		percentCols.add("Май");
+		percentCols.add("Июнь");
+		percentCols.add("2 Квартал");
+		percentCols.add("Июль");
+		percentCols.add("Август");
+		percentCols.add("Сентябрь");
+		percentCols.add("3 Квартал");
+		percentCols.add("Октябрь");
+		percentCols.add("Ноябрь");
+		percentCols.add("Декабрь");
+		percentCols.add("4 Квартал");
+		percentCols.add("Итого");
+		return percentCols.toArray();
 	}
 }
