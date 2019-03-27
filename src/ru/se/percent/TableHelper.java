@@ -37,7 +37,8 @@ public class TableHelper {
 						double rate = loan.getCurrentRate(endDate);
 						long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
 						double debt = loan.getCurrentDebt(endDate);
-						double percentTotal = loan.getTotalPercent(endDate) + loan.getPercent(loan.getStartDate(), endDate);
+						//double percentTotal = loan.getTotalPercent(endDate) + loan.getPercent(loan.getStartDate(), endDate);
+						double percentTotal = loan.getPercent(loan.getStartDate(), endDate);
 						reportData[i][0] = startDate;
 						reportData[i][1] = endDate;
 						reportData[i][2] = daysBetween;

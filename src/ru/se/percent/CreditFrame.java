@@ -1,6 +1,7 @@
 package ru.se.percent;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.EventQueue;
 import java.awt.FlowLayout;
@@ -43,6 +44,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 import javax.swing.text.NumberFormatter;
 import javax.swing.JTabbedPane;
@@ -90,6 +92,8 @@ public class CreditFrame extends JFrame {
 	private static final int DEFAULT_CHECKDAY = 28;
 	private static final int MIN_YEAR = 2000;
 	private static final int MAX_YEAR = 2050;
+	
+	//private static final String DATE_REG_EXP = "^[1-2][0-9]{3}-[0-1][0-2]-[1-3][0]$";
 	
 	private JList<Loan> listLoan;
 	private JTable tableTotalPercentPaid;
@@ -215,6 +219,7 @@ public class CreditFrame extends JFrame {
 		Object[] operationsCols = TableHelper.getOperationsTableCols();
 		TableModel operationsModel = new DefaultTableModel(operationsData, operationsCols);
 		tableOperations.setModel(operationsModel);
+		tableOperations.getColumnModel().getColumn(2).setCellRenderer(new CustomRenderer());
 	}
 	
 	private void refreshReportTable() {
@@ -222,9 +227,16 @@ public class CreditFrame extends JFrame {
 		Object[] reportCols = TableHelper.getReportTableCols();
 		TableModel reportModel = new DefaultTableModel(reportData, reportCols);
 		tableReport.setModel(reportModel);
+		/*
+		tableReport.getColumnModel().getColumn(0).setCellRenderer(new ColorRenderer());
 		tableReport.getColumnModel().getColumn(4).setCellRenderer(new DecimalFormatRenderer());
 		tableReport.getColumnModel().getColumn(5).setCellRenderer(new DecimalFormatRenderer());
 		tableReport.getColumnModel().getColumn(6).setCellRenderer(new DecimalFormatRenderer());
+		*/
+		tableReport.getColumnModel().getColumn(0).setCellRenderer(new CustomRenderer());
+		tableReport.getColumnModel().getColumn(4).setCellRenderer(new CustomRenderer());
+		tableReport.getColumnModel().getColumn(5).setCellRenderer(new CustomRenderer());
+		tableReport.getColumnModel().getColumn(6).setCellRenderer(new CustomRenderer());
 	}
 	
 	private void refreshPercentTables() {
@@ -232,6 +244,9 @@ public class CreditFrame extends JFrame {
 		Object[] percentCols = TableHelper.getPercentTableCols();
 		TableModel percentModel = new DefaultTableModel(percentData, percentCols);
 		tableTotalPercentPaid.setModel(percentModel);
+		for (int j = 2; j <= 18; j++) {
+			tableTotalPercentPaid.getColumnModel().getColumn(j).setCellRenderer(new CustomRenderer());
+		}
 	}
 	
 	private void updateLoanPropsFromUI() {
@@ -530,12 +545,15 @@ public class CreditFrame extends JFrame {
 				String rateValue = tfRateValue.getText();
 				String rateDate = tfRateDate.getText();
 				if (rateDate != null && !rateDate.isEmpty() && rateValue != null && !rateValue.isEmpty()) {
-					if (rateValue.matches("^[0-9]*\\.?[0-9]{0,2}$")) {
-						DefaultTableModel model = (DefaultTableModel) tableRate.getModel();
-						model.addRow(new Object[] {rateDate, rateValue});
-						loan.addRate(LocalDate.parse(rateDate), Double.parseDouble(rateValue));
-						prepareTables();
-						dataHelper.saveLoan(loan.getFileName(), loan);
+					if (rateValue.matches("^[0-9]*\\.?[0-9]{0,2}$")) {// && rateDate.matches(DATE_REG_EXP)) {
+						LocalDate date = LocalDate.parse(rateDate);
+						if (!date.isBefore(loan.getStartDate()) && !date.isAfter(loan.getEndDate())) {
+							DefaultTableModel model = (DefaultTableModel) tableRate.getModel();
+							model.addRow(new Object[] {rateDate, rateValue});
+							loan.addRate(date, Double.parseDouble(rateValue));
+							prepareTables();
+							dataHelper.saveLoan(loan.getFileName(), loan);
+						}
 					}
 				}
 			}
@@ -601,14 +619,17 @@ public class CreditFrame extends JFrame {
 				ru.se.percent.Type type = (ru.se.percent.Type) cmbOperation.getSelectedItem();
 				String sum = tfOperationsSum.getText();
 				if (date!= null && !date.isEmpty() && sum != null && !sum.isEmpty()) {
-					if (sum.matches("^[0-9]+\\.?[0-9]*$")) {
-						DefaultTableModel model = (DefaultTableModel) tableOperations.getModel();
-						model.addRow(new Object[] {date, type, sum});
-						Operation op = new Operation(LocalDate.parse(date), Double.parseDouble(sum), type);
-						loan.addOperation(op);
-						dataHelper.saveLoan(loan.getFileName(), loan);
-						logOperations();
-						prepareTables();
+					if (sum.matches("^[0-9]+\\.?[0-9]*$")) {// && date.matches(DATE_REG_EXP)) {
+						LocalDate ld = LocalDate.parse(date);
+						if (!ld.isBefore(loan.getStartDate()) && !ld.isAfter(loan.getEndDate())) {
+							DefaultTableModel model = (DefaultTableModel) tableOperations.getModel();
+							model.addRow(new Object[] {date, type, sum});
+							Operation op = new Operation(ld, Double.parseDouble(sum), type);
+							loan.addOperation(op);
+							dataHelper.saveLoan(loan.getFileName(), loan);
+							logOperations();
+							prepareTables();
+						}
 					}
 				}
 			}
@@ -754,19 +775,107 @@ public class CreditFrame extends JFrame {
 		}
 	}
 	
-	private static class DecimalFormatRenderer extends DefaultTableCellRenderer {
+	private class CustomRenderer extends DefaultTableCellRenderer {
 
 		private static final long serialVersionUID = 1L;
 		
-		private static final DecimalFormat formatter = new DecimalFormat( "#.00" );
+		private final DecimalFormat formatter = new DecimalFormat( "###,###.##" );
 		 
+		@Override
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-	        // First format the cell value as required
-			value = formatter.format((Number)value);
-	 
-	        // And pass it on to parent class
-			return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column );
+			Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+			if (table.getColumnCount() == TableHelper.getReportTableCols().length) {
+				if (column == 0) {
+					LocalDate date = (LocalDate) value;
+					LocalDate startDate = date.withDayOfMonth(1);
+					LocalDate endDate = date.withDayOfMonth(date.lengthOfMonth());
+					boolean mainPaid = false;
+					boolean mainReceived = false;
+					for (Operation op : loan.getOperations()) {
+						if (!op.getDate().isBefore(startDate) && !op.getDate().isAfter(endDate)) {
+							switch (op.getType()) {
+							case MAIN_PAID:
+								mainPaid = true;
+								break;
+							case MAIN_RECEIVED:
+								mainReceived = true;
+								break;
+							}
+						}
+					}
+					
+					if (mainReceived && mainPaid) {
+						component.setBackground(Color.GREEN);
+					} else if (mainReceived) {
+						component.setBackground(Color.ORANGE);
+					} else if (mainPaid) {
+						component.setBackground(Color.YELLOW);
+					} else {
+						component.setBackground(Color.WHITE);
+					}
+				}
+				if (column == 4 || column == 5 || column == 6) {
+					value = formatter.format((Number)value);
+					return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+				}
+			} else if (table.getColumnCount() == TableHelper.getPercentTableCols().length) {
+				value = formatter.format((Number)value);
+				component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+				if (column == 5 || column == 9 || column == 13 || column == 17) {
+					component.setBackground(Color.ORANGE);
+				} else if (column == 18) {
+					component.setBackground(Color.GREEN);
+				}
+			} else if (table.getColumnCount() == TableHelper.getOperationsTableCols().length) {
+				value = formatter.format((Number)value);
+				component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+			}
+			return component;
 		}
 	}
 	
+	/*
+	private class ColorRenderer extends DefaultTableCellRenderer {
+		
+		private static final long serialVersionUID = 1L;
+		
+		@Override
+		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+			Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+			if (table.getColumnCount() == TableHelper.getReportTableCols().length) {
+				LocalDate date = (LocalDate) value;
+				LocalDate startDate = date.withDayOfMonth(1);
+				LocalDate endDate = date.withDayOfMonth(date.lengthOfMonth());
+				boolean mainPaid = false;
+				boolean mainReceived = false;
+				for (Operation op : loan.getOperations()) {
+					if (!op.getDate().isBefore(startDate) && !op.getDate().isAfter(endDate)) {
+						switch (op.getType()) {
+						case MAIN_PAID:
+							mainPaid = true;
+							break;
+						case MAIN_RECEIVED:
+							mainReceived = true;
+							break;
+						}
+					}
+				}
+				
+				if (mainReceived && mainPaid) {
+					component.setBackground(Color.GREEN);
+				} else if (mainReceived) {
+					component.setBackground(Color.ORANGE);
+				} else if (mainPaid) {
+					component.setBackground(Color.YELLOW);
+				} else {
+					component.setBackground(Color.WHITE);
+				}
+			} else if (table.getColumnCount() == TableHelper.getPercentTableCols().length) {
+				
+			}
+			return component;
+		}
+		
+	}
+	*/
 }

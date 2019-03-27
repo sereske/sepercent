@@ -175,7 +175,7 @@ public class Loan implements Serializable {
 		}
 		return currentDebt;
 	}
-	
+	/*
 	public double getTotalPercent(LocalDate date) {
 		double totalPercent = 0.0;
 		for (Operation op : operations) {
@@ -189,7 +189,7 @@ public class Loan implements Serializable {
 		}
 		return totalPercent;
 	}
-	
+	*/
 	public double getCurrentRate(LocalDate date) {
 		LocalDate currentDate = date;
 		//while (!rates.isEmpty() && !rates.containsKey(currentDate)) {
