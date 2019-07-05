@@ -96,8 +96,8 @@ public class CreditFrame extends JFrame {
 	//private static final String DATE_REG_EXP = "^[1-2][0-9]{3}-[0-1][0-2]-[1-3][0]$";
 	
 	private JList<Loan> listLoan;
-	private JTable tableTotalPercentPaid;
 	private JTable tableTotalPercentReceived;
+	private JTable tableTotalPercentPaid;
 	private JComboBox<Integer> cmbYear;
 	
 	public static void main(String[] args) {
@@ -240,10 +240,16 @@ public class CreditFrame extends JFrame {
 	}
 	
 	private void refreshPercentTables() {
-		Object[][] percentData = TableHelper.getPercentTableData(loans, new Integer(cmbYear.getSelectedItem().toString()));
+		Object[][] receivedPercentData = TableHelper.getPercentTableData(loans, new Integer(cmbYear.getSelectedItem().toString()), true);
+		Object[][] paidPercentData = TableHelper.getPercentTableData(loans, new Integer(cmbYear.getSelectedItem().toString()), false);
 		Object[] percentCols = TableHelper.getPercentTableCols();
-		TableModel percentModel = new DefaultTableModel(percentData, percentCols);
-		tableTotalPercentPaid.setModel(percentModel);
+		TableModel receivedPercentModel = new DefaultTableModel(receivedPercentData, percentCols);
+		tableTotalPercentReceived.setModel(receivedPercentModel);
+		for (int j = 2; j <= 18; j++) {
+			tableTotalPercentReceived.getColumnModel().getColumn(j).setCellRenderer(new CustomRenderer());
+		}
+		TableModel paidPercentModel = new DefaultTableModel(paidPercentData, percentCols);
+		tableTotalPercentPaid.setModel(paidPercentModel);
 		for (int j = 2; j <= 18; j++) {
 			tableTotalPercentPaid.getColumnModel().getColumn(j).setCellRenderer(new CustomRenderer());
 		}
@@ -699,13 +705,13 @@ public class CreditFrame extends JFrame {
 		tabbedPane.addTab("Общий отчет", null, reportTab, null);
 		reportTab.setLayout(new BoxLayout(reportTab, BoxLayout.Y_AXIS));
 		
-		tableTotalPercentPaid = new JTable();
-		tableTotalPercentPaid.setFillsViewportHeight(true);
+		tableTotalPercentReceived = new JTable();
+		tableTotalPercentReceived.setFillsViewportHeight(true);
 		
 		//reportTab.add(tableTotalPercentPaid);
 		
-		tableTotalPercentReceived = new JTable();
-		tableTotalPercentReceived.setFillsViewportHeight(true);
+		tableTotalPercentPaid = new JTable();
+		tableTotalPercentPaid.setFillsViewportHeight(true);
 		
 		JPanel panel_1 = new JPanel();
 		reportTab.add(panel_1);
@@ -734,10 +740,16 @@ public class CreditFrame extends JFrame {
 		panel_1.add(lblNewLabel_1);
 		//reportTab.add(tableTotalPercentReceived);
 		
-		JScrollPane scrollPane6 = new JScrollPane(tableTotalPercentPaid);
+		JScrollPane scrollPane6 = new JScrollPane(tableTotalPercentReceived);
 		reportTab.add(scrollPane6);
 		
-		JScrollPane scrollPane7 = new JScrollPane(tableTotalPercentReceived);
+		JPanel panel_2 = new JPanel();
+		reportTab.add(panel_2);
+		
+		JLabel lblNewLabel_2 = new JLabel("Уплачено процентов");
+		panel_2.add(lblNewLabel_2);
+		
+		JScrollPane scrollPane7 = new JScrollPane(tableTotalPercentPaid);
 		reportTab.add(scrollPane7);
 		
 		btnDeleteOperation.addActionListener(new ActionListener() {
@@ -814,7 +826,7 @@ public class CreditFrame extends JFrame {
 						component.setBackground(Color.WHITE);
 					}
 				}
-				if (column == 4 || column == 5 || column == 6) {
+				if (column == 4 || column == 5 || column == 6 || column == 7 || column == 8) {
 					value = formatter.format((Number)value);
 					return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 				}

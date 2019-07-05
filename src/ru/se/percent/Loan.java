@@ -154,6 +154,27 @@ public class Loan implements Serializable {
 		return currentPercent;
 	}
 	
+	public double getPercentPaid(LocalDate date) {
+		if (date.getDayOfMonth() == 1 && date.lengthOfMonth() > checkDay) {
+			return 0.0;
+		} else {
+			LocalDate date1 = getCheckDate(date.minusMonths(1)).plusDays(1);
+			LocalDate date2 = getCheckDate(date);
+			return getPercent(date1, date2);
+		}
+	}
+	
+	private LocalDate getCheckDate(LocalDate currentDate) {
+		int checkDay = getCheckDay();
+		if (getCheckDay() > 28 && currentDate.getMonth() == Month.FEBRUARY) {
+			checkDay = currentDate.isLeapYear() ? 29 : 28;
+		} else if (getCheckDay() > 30) {
+			checkDay = currentDate.lengthOfMonth();
+		}
+		LocalDate checkDate = LocalDate.of(currentDate.getYear(), currentDate.getMonth(), checkDay);
+		return checkDate;
+	}
+	
 	public static double round(double value, int places) {
 	    if (places < 0) throw new IllegalArgumentException();
 
@@ -207,6 +228,7 @@ public class Loan implements Serializable {
 		List<LocalDate> dates = new ArrayList<>();
 		LocalDate currentDate = startDate;
 		while (!currentDate.equals(getEndDate().plusDays(1))) {
+			/*
 			int checkDay = getCheckDay();
 			if (getCheckDay() > 28 && currentDate.getMonth() == Month.FEBRUARY) {
 				checkDay = currentDate.isLeapYear() ? 29 : 28;
@@ -214,6 +236,8 @@ public class Loan implements Serializable {
 				checkDay = currentDate.lengthOfMonth();
 			}
 			LocalDate checkDate = LocalDate.of(currentDate.getYear(), currentDate.getMonth(), checkDay);
+			*/
+			LocalDate checkDate = getCheckDate(currentDate);
 			if (
 					currentDate.equals(getStartDate()) || 
 					currentDate.equals(getEndDate()) ||

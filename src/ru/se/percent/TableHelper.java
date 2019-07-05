@@ -16,9 +16,11 @@ public class TableHelper {
 		reportCols.add("Конец периода");
 		reportCols.add("Кол-во дней");
 		reportCols.add("Ставка");
-		reportCols.add("Начислено процентов");
 		reportCols.add("Основной долг");
+		reportCols.add("Начислено процентов");
+		reportCols.add("Уплачено процентов");
 		reportCols.add("Проценты нарастающие");
+		reportCols.add("Сальдо");
 		return reportCols.toArray();
 	}
 	
@@ -28,24 +30,28 @@ public class TableHelper {
 			List<LocalDate> dates = isDateDivided ? loan.getDatesDivided() : loan.getDates();
 			try {
 				if (loan.getInitialSum() != 0) {
-					reportData = new Object[dates.size() / 2][7];
+					reportData = new Object[dates.size() / 2][9];
 					int i = 0;
 					for (int k = 0; k < dates.size() - 1; k += 2) {
 						LocalDate startDate = dates.get(k);
 						LocalDate endDate = dates.get(k + 1);
 						double percent = loan.getPercent(startDate, endDate);
+						double paid = loan.getPercentPaid(startDate);
 						double rate = loan.getCurrentRate(endDate);
 						long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
 						double debt = loan.getCurrentDebt(endDate);
 						//double percentTotal = loan.getTotalPercent(endDate) + loan.getPercent(loan.getStartDate(), endDate);
 						double percentTotal = loan.getPercent(loan.getStartDate(), endDate);
+						double saldo = 0.0;//paid - percent;
 						reportData[i][0] = startDate;
 						reportData[i][1] = endDate;
 						reportData[i][2] = daysBetween;
 						reportData[i][3] = rate;
-						reportData[i][4] = percent;
-						reportData[i][5] = debt;
-						reportData[i][6] = percentTotal;
+						reportData[i][4] = debt;
+						reportData[i][5] = percent;
+						reportData[i][6] = paid;
+						reportData[i][7] = percentTotal;
+						reportData[i][8] = saldo;
 						i++;
 					}
 				} else {
@@ -128,7 +134,7 @@ public class TableHelper {
 		return propertiesData;
 	}
 	
-	public static Object[][] getPercentTableData(List<Loan> loans, int year) {
+	public static Object[][] getPercentTableData(List<Loan> loans, int year, boolean received) {
 		Object[][] percentData = new Object[loans.size() + 1][19];
 		for (int i = 0; i < loans.size(); i++) {
 			Loan loan = loans.get(i);
@@ -192,7 +198,11 @@ public class TableHelper {
 					startDate = LocalDate.of(year,  1,  1);
 					endDate = LocalDate.of(year, 12, 31);
 				}
-				percentData[i][j] = loan.getPercent(startDate, endDate);
+				if (received) {
+					percentData[i][j] = loan.getPercent(startDate, endDate);
+				} else {
+					percentData[i][j] = loan.getPercentPaid(endDate);
+				}
 			}
 		}
 		int totalRow = loans.size();
