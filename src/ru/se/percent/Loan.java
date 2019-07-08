@@ -154,8 +154,8 @@ public class Loan implements Serializable {
 		return currentPercent;
 	}
 	
-	public double getPercentPaid(LocalDate date) {
-		if (date.getDayOfMonth() == 1 && date.lengthOfMonth() > checkDay) {
+	public double getPercentPaid(LocalDate date, boolean isDateDivided) {
+		if (date.getDayOfMonth() == 1 && date.lengthOfMonth() > checkDay && isDateDivided) {
 			return 0.0;
 		} else {
 			LocalDate date1 = getCheckDate(date.minusMonths(1)).plusDays(1);
@@ -164,7 +164,15 @@ public class Loan implements Serializable {
 		}
 	}
 	
-	private LocalDate getCheckDate(LocalDate currentDate) {
+	public double getSaldo(LocalDate endDate, boolean isDateDivided) {
+		if (endDate.getDayOfMonth() == endDate.lengthOfMonth()) {
+			return endDate.equals(this.endDate) ? 0 : getPercent(startDate, endDate) - getPercent(startDate, getCheckDate(endDate));
+		} else {
+			return 0.0;
+		}
+	}
+	
+	public LocalDate getCheckDate(LocalDate currentDate) {
 		int checkDay = getCheckDay();
 		if (getCheckDay() > 28 && currentDate.getMonth() == Month.FEBRUARY) {
 			checkDay = currentDate.isLeapYear() ? 29 : 28;

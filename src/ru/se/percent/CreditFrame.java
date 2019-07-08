@@ -237,11 +237,13 @@ public class CreditFrame extends JFrame {
 		tableReport.getColumnModel().getColumn(4).setCellRenderer(new CustomRenderer());
 		tableReport.getColumnModel().getColumn(5).setCellRenderer(new CustomRenderer());
 		tableReport.getColumnModel().getColumn(6).setCellRenderer(new CustomRenderer());
+		tableReport.getColumnModel().getColumn(7).setCellRenderer(new CustomRenderer());
+		tableReport.getColumnModel().getColumn(8).setCellRenderer(new CustomRenderer());
 	}
 	
 	private void refreshPercentTables() {
-		Object[][] receivedPercentData = TableHelper.getPercentTableData(loans, new Integer(cmbYear.getSelectedItem().toString()), true);
-		Object[][] paidPercentData = TableHelper.getPercentTableData(loans, new Integer(cmbYear.getSelectedItem().toString()), false);
+		Object[][] receivedPercentData = TableHelper.getPercentTableData(loans, new Integer(cmbYear.getSelectedItem().toString()), true, chbDateDivision.isSelected());
+		Object[][] paidPercentData = TableHelper.getPercentTableData(loans, new Integer(cmbYear.getSelectedItem().toString()), false, chbDateDivision.isSelected());
 		Object[] percentCols = TableHelper.getPercentTableCols();
 		TableModel receivedPercentModel = new DefaultTableModel(receivedPercentData, percentCols);
 		tableTotalPercentReceived.setModel(receivedPercentModel);
