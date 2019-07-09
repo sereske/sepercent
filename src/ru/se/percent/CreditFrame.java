@@ -685,7 +685,7 @@ public class CreditFrame extends JFrame {
 		JButton btnExcel = new JButton("Excel");
 		btnExcel.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				excelHelper.exportFile(loan, chbDateDivision.isSelected());
+				excelHelper.exportReportFile(loan, chbDateDivision.isSelected());
 			}
 		});
 		btnExcel.setToolTipText("Выгрузить в Excel");
@@ -740,6 +740,15 @@ public class CreditFrame extends JFrame {
 		
 		JLabel lblNewLabel_1 = new JLabel("год");
 		panel_1.add(lblNewLabel_1);
+		
+		JButton btnCommonExcel = new JButton("Excel");
+		btnCommonExcel.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				int year = new Integer(cmbYear.getSelectedItem().toString());
+				ExcelHelper.getInstance().exportCommonReportFile(loans, year, chbDateDivision.isSelected());
+			}
+		});
+		panel_1.add(btnCommonExcel);
 		//reportTab.add(tableTotalPercentReceived);
 		
 		JScrollPane scrollPane6 = new JScrollPane(tableTotalPercentReceived);

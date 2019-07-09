@@ -208,11 +208,13 @@ public class TableHelper {
 					startDate = LocalDate.of(year,  1,  1);
 					endDate = LocalDate.of(year, 12, 31);
 				}
+				
 				if (received) {
 					percentData[i][j] = loan.getPercent(startDate, endDate);
 				} else {
 					percentData[i][j] = loan.getPercentPaid(endDate, isDateDivided);
 				}
+				
 			}
 		}
 		int totalRow = loans.size();

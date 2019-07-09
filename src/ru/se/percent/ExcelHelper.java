@@ -9,8 +9,12 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -40,7 +44,7 @@ public class ExcelHelper {
 		return instance;
 	}
 	
-	public void exportFile(Loan loan, boolean isDateDivided) {
+	public void exportReportFile(Loan loan, boolean isDateDivided) {
 		//Object[][] rateData = TableHelper.getRateTableData(loan);
 		Object[][] reportData = TableHelper.getReportTableData(loan, isDateDivided);
 		Object[][] operationsData = TableHelper.getOperationsTableData(loan);
@@ -230,5 +234,112 @@ public class ExcelHelper {
         		e.printStackTrace();
         	}
         }
+	}
+	
+	public void exportCommonReportFile(List<Loan> loans, int year, boolean isDateDivided) {
+		Object[] percentCols = TableHelper.getPercentTableCols();
+		Object[][]  receivedPercentData = TableHelper.getPercentTableData(loans, year, true, false);
+		Object[][]  paidPercentData = TableHelper.getPercentTableData(loans, year, false, false);
+		if (receivedPercentData != null && paidPercentData != null) {
+			XSSFWorkbook workbook = new XSSFWorkbook();
+			XSSFSheet sheet = workbook.createSheet("Общий отчет");
+			
+			CellStyle greenBackground = workbook.createCellStyle();
+			//greenBackground.setFillPattern(FillPatternType.BIG_SPOTS);  
+			greenBackground.setFillForegroundColor(IndexedColors.GREEN.getIndex());
+			greenBackground.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+			CellStyle orangeBackground = workbook.createCellStyle();
+			//orangeBackground.setFillPattern(FillPatternType.BIG_SPOTS);
+			orangeBackground.setFillForegroundColor(IndexedColors.ORANGE.getIndex());
+			orangeBackground.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+			
+			int rowNum = 1;
+			int headerColNum = 8;
+			Row headerRow = sheet.createRow(rowNum++);
+			Cell headerCell = headerRow.createCell(headerColNum);
+			headerCell.setCellValue("Проценты Сахаэнерго, начисленные в " + year + " году.");
+			rowNum++;
+			
+			int i = 0;
+			Row monthRow = sheet.createRow(rowNum);
+			for (Object data : percentCols) {
+				Cell cell = monthRow.createCell(i);
+				if (data instanceof String) {
+            		cell.setCellValue((String) data);
+            	}
+	            i++;
+			}
+			rowNum++;
+			
+			for (Object[] data : receivedPercentData) {
+				Row row = sheet.createRow(rowNum++);
+	            int colNum = 0;
+	            for (Object field : data) {
+	            	Cell cell = row.createCell(colNum++);
+	            	if (field instanceof String) {
+	            		cell.setCellValue((String) field);
+	            	} else if (field instanceof Double) {
+	            		cell.setCellValue((Double) field);
+	            	} else if (field instanceof Integer) {
+	            		cell.setCellValue((Integer) field);
+	            	}
+	            	if (colNum == 6 || colNum == 10 || colNum == 14 || colNum == 18) {
+	            		cell.setCellStyle(orangeBackground);
+	            	}
+	            	if (colNum == 19) {
+	            		cell.setCellStyle(greenBackground);
+	            	}
+	            }
+			}
+			
+			rowNum++;
+			headerRow = sheet.createRow(rowNum++);
+			headerCell = headerRow.createCell(headerColNum);
+			headerCell.setCellValue("Проценты Сахаэнерго, уплаченные в " + year + " году.");
+			rowNum++;
+			
+			i = 0;
+			monthRow = sheet.createRow(rowNum);
+			for (Object data : percentCols) {
+				Cell cell = monthRow.createCell(i);
+				if (data instanceof String) {
+            		cell.setCellValue((String) data);
+            	}
+	            i++;
+			}
+			rowNum++;
+			
+			for (Object[] data : paidPercentData) {
+				Row row = sheet.createRow(rowNum++);
+	            int colNum = 0;
+	            for (Object field : data) {
+	            	Cell cell = row.createCell(colNum++);
+	            	if (field instanceof String) {
+	            		cell.setCellValue((String) field);
+	            	} else if (field instanceof Double) {
+	            		cell.setCellValue((Double) field);
+	            	} else if (field instanceof Integer) {
+	            		cell.setCellValue((Integer) field);
+	            	}
+	            	if (colNum == 6 || colNum == 10 || colNum == 14 || colNum == 18) {
+	            		cell.setCellStyle(orangeBackground);
+	            	}
+	            	if (colNum == 19) {
+	            		cell.setCellStyle(greenBackground);
+	            	}
+	            }
+			}
+			
+			String formatDateTime = LocalDateTime.now().format(DATETIME_FORMATTER);       
+	        String fileName = "Общий отчет" + "_" + formatDateTime;
+	        try (FileOutputStream outputStream = new FileOutputStream(EXCEL_FOLDER + "\\" + fileName + ".xlsx")) {
+	            workbook.write(outputStream);
+	            workbook.close();
+	        } catch (FileNotFoundException e) {
+	            e.printStackTrace();
+	        } catch (IOException e) {
+	            e.printStackTrace();
+	        }
+		}
 	}
 }
